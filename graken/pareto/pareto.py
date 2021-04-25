@@ -29,20 +29,20 @@ class LocalLandmarksDistanceOptimizer(object):
             
         self.grammar = grammar
         self.estimator = estimator
-        self.filter=filter
+        self.paretofilter=filter
         self.keepgraphs = keepgraphs
         self.n_iter = n_iter
         self.vectorizer = vectorizer
         self.rmdup = remove_duplicates
         
-        self.avarages=[]
-        self.seen_graphs = []
+        self.seen_graphs = {}
 
         #######################
         #  OPTIMIZE
         #####################
 
-    def optimize(self, start_graph_list=False, target_graph_vector=None):
+    def optimize(self, graphs=False, target_graph_vector=None):
+        self.target = target_graph_vector
         starttime = time.time()
         for i in range(self.n_iter):
             logging.debug("++++++++  START OPTIMIZATION STEP %d +++++++" % i)
@@ -53,19 +53,15 @@ class LocalLandmarksDistanceOptimizer(object):
             '''
             graphs, done = self.filter(graphs)
             if done:
-                return True, i, time.time() - starttime, np.mean(self.averages)
+                return True, i, time.time() - starttime
 
-            num_graphs = len(graphs)
             graphs = self.grammar.expand_neighbors(graphs)
-            avg_productions = len(graphs) / num_graphs
-            self.averages.append(avg_productions)
-            logging.log(10, f"Average productions per graph: {avg_productions}")
             if self.rmdup:
                 graphs = self.duplicate_rm(graphs)
 
 
         
-        return False, -1 , time.time() - starttime, np.mean(self.averages)
+        return False, -1 , time.time() - starttime
         
 
     ##############
@@ -79,51 +75,56 @@ class LocalLandmarksDistanceOptimizer(object):
         '''
         timenow = time.time()
         in_count = len(graphs)
-
-
-        if self.filter in ['greed', 'random'] or len(graphs) < self.keepgraphs:
+        frontsize=''
+        if self.paretofilter in ['greedy', 'random'] or len(graphs) < self.keepgraphs:
             distances = euclidean_distances(self.target, self.vectorizer.transform(graphs))
-            done = min(distances) < 0.0001
-            if self.filter == 'greed':
-                ranked_distances = np.argsort(distances)[:self.keepgraphs]
-                graphs = [graphs[i] for i in ranked_distances]
-            if self.filter == 'random':
+            done = distances.min() < 0.0001
+            if self.paretofilter == 'greedy':
+                ranked_distances = np.argsort(distances)[0]
+                graphs = [graphs[i] for i in ranked_distances[:self.keepgraphs]]
+            if self.paretofilter == 'random':
                 graphs = random.sample(graphs, self.keepgraphs)
+        elif self.paretofilter == 'default':
+                graphs = self._default_selektor(graphs)
         else:
             costs = self.estimator.decision_function(graphs)
             graphs, costs = pareto_funcs._pareto_set(graphs, costs, return_costs=True)
-            costs = self.add_rank(costs) # costs = distances rank size
-            done =  min(costs[:,0]) < 0.00001
+            costs = self._add_rank(costs) # costs = distances rank size
+            frontsize=len(graphs)
 
-            if self.filter in ['all','pareto_only']:
+            done =  costs[:,0].min() < 0.00001
+            if len(graphs) < self.keepgraphs or self.paretofilter  == 'all':
+               pass  # noo need for further selection
+
+            elif self.paretofilter == 'pareto_only':
                 random.shuffle(graphs)
-                if self.filter == "pareto_only":
-                    graphs = graphs[:self.keepgraphs]
+                graphs = graphs[:self.keepgraphs]
                     
-            if self.filter == 'paretogreed':
+            elif self.paretofilter == 'paretogreed':
                 graphs = [graphs[x] for x in np.argsort(costs[:,3])[:self.keepgraphs]]
                 
-            if self.filter == 'defaut':
-                graphs = self._default_selektor(costs, graphs)
 
-        logging.log(10, f"cost_filter: got {in_count} graphs, reduced to {len(graphs)} (%.2fs)"%(time.time()-timenow))
+        logging.log(10, f"cost_filter: got {in_count} graphs (pareto:{frontsize}), reduced to {len(graphs)} (%.2fs)"%(time.time()-timenow))
 
         # print
         #g = [graphs[e] for e in np.argmin(costs, axis=0)]
         #logging.debug(so.graph.make_picture(g, edgelabel='label', size=10))
         #logging.log(10, [x.number_of_nodes() for x in g])
-
         return graphs, done
 
-    def _default_selektor(self, costs, graphs):
-        costs_ranked = np.argsort(costs, axis=0)[:int(self.keepgraphs / 6), [0, 1, 3]]  # 2 is size and that is bad, right?
+    def _default_selektor(self, graphs):
+        # TODO
+        # there are no costs yet..
+        costs_ranked = np.argsort(costs, axis=0)[:int(self.keepgraphs / 6), [0, 1, 3]]  
         want, counts = np.unique(costs_ranked, return_counts=True)
         res = [graphs[idd] for idd, count in zip(want, counts) if count > 0]
         dontwant = [i for i in range(len(graphs)) if i not in want]
         restgraphs = [graphs[i] for i in dontwant]
         restcosts = costs[dontwant][:, [0, 1, 2]]
+
         paretographs = pareto_funcs._pareto_set(restgraphs, restcosts)
-        graphs = res + random.sample(paretographs, int(self.keepgraphs / 2))
+        add =  random.sample(paretographs, self.keepgraphs - len(res))
+        graphs = res + add
         return graphs
 
         
@@ -158,7 +159,7 @@ class LocalLandmarksDistanceOptimizer(object):
         return graphs
 
     def _duplicate_rm(self, graphs):
-        hashes = self.hash_vectorizer.vectorize(graphs)
+        hashes = self.vectorizer.hashvec(graphs)
         for i, (ha, gr) in enumerate(zip(hashes, graphs)):
             if ha not in self.seen_graphs:
                 self.seen_graphs[ha] = i

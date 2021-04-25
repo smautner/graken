@@ -11,7 +11,7 @@ from eden.util import describe
 from eden.util import timeit
 import logging
 from scipy.stats import rankdata
-
+from scipy.sparse import csr_matrix
 
 import multiprocessing
 
@@ -114,7 +114,7 @@ import scipy
 class InstancesDistanceCostEstimator():
     """InstancesDistanceCostEstimator."""
 
-    def __init__(self, vectorizer=Vectorizer(), multiproc=1,squared_error=False):
+    def __init__(self, vectorizer=None, multiproc=1,squared_error=False):
         """init."""
         self.desired_distances = None
         self.reference_vecs = None
@@ -129,7 +129,7 @@ class InstancesDistanceCostEstimator():
         return self
 
     def _avg_distance_diff(self, vector):
-        distances = euclidean_distances(vector, self.reference_vecs)[0]
+        distances = euclidean_distances(vector.reshape(1,-1), self.reference_vecs)[0]
         d = self.desired_distances
         if self.squared_error:
             dist_diff = (distances - d)**2
@@ -181,8 +181,13 @@ class RankBiasCostEstimator():
                 pos.append(p)
                 neg.append(n)
         y = np.array([1] * len(pos) + [-1] * len(neg))
-        pos = sp.sparse.vstack(pos)
-        neg = sp.sparse.vstack(neg)
+
+        #from pprint import pprint
+        #pprint([e.shape for e in pos])
+        #pos = sp.sparse.vstack(pos)
+        #neg = sp.sparse.vstack(neg)
+        pos=csr_matrix(pos)
+        neg=csr_matrix(neg)
         x_ranks = sp.sparse.vstack([pos, neg])
         logging.debug('fitting: %s' % describe(x_ranks))
         self.estimator = self.estimator.fit(x_ranks, y)

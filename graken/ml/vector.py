@@ -4,7 +4,7 @@ from lmz import *
 
 from ego.decomposition.paired_neighborhoods import decompose_paired_neighborhoods
 from ego.real_vectorize import graph_node_vectorize
-from sklearn.preprocesing import normalize
+from sklearn.preprocessing import normalize as sknormalize
 import numpy as np
 
 from eden.graph import Vectorizer as edenvec
@@ -13,18 +13,18 @@ class Vectorizer():
 
     def __init__(self, radius, distance, normalize):
         self.decompose = lambda gr: decompose_paired_neighborhoods(gr, max_radius=radius, max_distance=distance)
-        self.normalize = normalize
-        self.vectorize = lambda graph: graph_node_vectorize(gr, self.decompose)
+        self.norm = normalize
+        self.vectorize = lambda graph: graph_node_vectorize(graph, self.decompose)
         self.hasher = edenvec(r=2,d=1, normalization = False, inner_normalization= False)    
      
     def transform(self,graphs):
         # should i use this instead? from ego.vectorize import vectorize
-        r = np.vstack(map(self.vectorize,graphs))
+        r = np.vstack(Map(self.vectorize,graphs))
         return self.normalize(r)
 
     def normalize(self, ndarr):
-        if self.normalize:
-            ndarr = normalize(ndarr, axis = 1 )
+        if self.norm:
+            ndarr = sknormalize(ndarr, axis = 1 )
         return ndarr
 
     def raw(self,graph):

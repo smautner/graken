@@ -8,7 +8,7 @@ import logging
 
 def initialize(n_landmarks=10, n_neighbors=100, vectorizer=None, graphs=None, target=None):
     
-        assert n_neighbors > len(graphs)
+        assert n_neighbors < len(graphs)
 
         vecs = vectorizer.transform(graphs)
         nn = NearestNeighbors(n_neighbors=n_neighbors).fit(vecs)
