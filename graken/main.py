@@ -116,4 +116,4 @@ optimizer = pareto.LocalLandmarksDistanceOptimizer(
 
 
 result = optimizer.optimize(landmark_graphs, vectorizer.transform([target]))
-jdumpfile(result, args.out)
+dumpfile(result, args.out)

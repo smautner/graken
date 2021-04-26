@@ -44,6 +44,7 @@ class LocalLandmarksDistanceOptimizer(object):
     def optimize(self, graphs=False, target_graph_vector=None):
         self.target = target_graph_vector
         starttime = time.time()
+        done = False
         for i in range(self.n_iter):
             logging.debug("++++++++  START OPTIMIZATION STEP %d +++++++" % i)
             '''
@@ -53,15 +54,16 @@ class LocalLandmarksDistanceOptimizer(object):
             '''
             graphs, done = self.filter(graphs)
             if done:
-                return True, i, time.time() - starttime
+                break
 
             graphs = self.grammar.expand_neighbors(graphs)
             if self.rmdup:
                 graphs = self.duplicate_rm(graphs)
 
 
-        
-        return False, -1 , time.time() - starttime
+        logging.debug('\n'+so.graph.make_picture(random.sample(graphs,3), edgelabel='label', size=10))
+        logging.debug(f"success: {done}")
+        return done, i , time.time() - starttime
         
 
     ##############
@@ -85,14 +87,14 @@ class LocalLandmarksDistanceOptimizer(object):
             if self.paretofilter == 'random':
                 graphs = random.sample(graphs, self.keepgraphs)
         elif self.paretofilter == 'default':
-                graphs = self._default_selektor(graphs)
+                graphs,done, frontsize = self._default_selektor(graphs)
         else:
             costs = self.estimator.decision_function(graphs)
             graphs, costs = pareto_funcs._pareto_set(graphs, costs, return_costs=True)
             costs = self._add_rank(costs) # costs = distances rank size
             frontsize=len(graphs)
-
             done =  costs[:,0].min() < 0.00001
+
             if len(graphs) < self.keepgraphs or self.paretofilter  == 'all':
                pass  # noo need for further selection
 
@@ -107,25 +109,23 @@ class LocalLandmarksDistanceOptimizer(object):
         logging.log(10, f"cost_filter: got {in_count} graphs (pareto:{frontsize}), reduced to {len(graphs)} (%.2fs)"%(time.time()-timenow))
 
         # print
-        #g = [graphs[e] for e in np.argmin(costs, axis=0)]
-        #logging.debug(so.graph.make_picture(g, edgelabel='label', size=10))
-        #logging.log(10, [x.number_of_nodes() for x in g])
         return graphs, done
 
     def _default_selektor(self, graphs):
-        # TODO
-        # there are no costs yet..
+        costs = self.estimator.decision_function(graphs)
+        done =  costs[:,0].min() < 0.00001
+        costs = self._add_rank(costs) 
         costs_ranked = np.argsort(costs, axis=0)[:int(self.keepgraphs / 6), [0, 1, 3]]  
         want, counts = np.unique(costs_ranked, return_counts=True)
         res = [graphs[idd] for idd, count in zip(want, counts) if count > 0]
         dontwant = [i for i in range(len(graphs)) if i not in want]
         restgraphs = [graphs[i] for i in dontwant]
         restcosts = costs[dontwant][:, [0, 1, 2]]
-
         paretographs = pareto_funcs._pareto_set(restgraphs, restcosts)
-        add =  random.sample(paretographs, self.keepgraphs - len(res))
+        samplenum = min(len(paretographs), self.keepgraphs - len(res))
+        add =  random.sample(paretographs,samplenum)
         graphs = res + add
-        return graphs
+        return graphs, done, len(paretographs)
 
         
 
