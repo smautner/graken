@@ -87,7 +87,7 @@ class LocalLandmarksDistanceOptimizer(object):
             if self.paretofilter == 'random':
                 graphs = random.sample(graphs, self.keepgraphs)
         elif self.paretofilter == 'default':
-                graphs,done, frontsize = self._default_selektor(graphs)
+                graphs,done, frontsize = self._default_selector(graphs)
         else:
             costs = self.estimator.decision_function(graphs)
             graphs, costs = pareto_funcs._pareto_set(graphs, costs, return_costs=True)
@@ -111,7 +111,7 @@ class LocalLandmarksDistanceOptimizer(object):
         # print
         return graphs, done
 
-    def _default_selektor(self, graphs):
+    def _default_selector(self, graphs):
         costs = self.estimator.decision_function(graphs)
         done =  costs[:,0].min() < 0.00001
         costs = self._add_rank(costs) 
