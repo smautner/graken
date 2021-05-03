@@ -29,8 +29,9 @@ if __name__=="__main__":
 
     args=opts.parse(docIter)
     out  = args.__dict__.pop('out')
-    graphs = rrg.rule_rand_graphs(startgraphs, **args.__dict__)
+    graphs,_ = rrg.rule_rand_graphs(startgraphs, **args.__dict__)
 
+    so.gprint(graphs[:4])
     dumpfile(graphs, out)
 
 

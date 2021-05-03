@@ -3,7 +3,7 @@ import graphlearn.util.util as u
 import graphlearn.local_substitution_graph_grammar as lsgg
 from graken.ml import vector
 
-def rule_rand_graphs(input_set, numgr =100, iter= 1):
+def rule_rand_graphs(input_set, numgr =100, iter= 1, bottleneck = 500):
     # make grammar, fit on input
     grammar = lsgg.LocalSubstitutionGraphGrammar(radii=[1,2], thickness=1,
                  filter_min_cip=1, filter_min_interface=2, nodelevel_radius_and_thickness=True)#,
@@ -19,9 +19,10 @@ def rule_rand_graphs(input_set, numgr =100, iter= 1):
         input_set = [g for start in input_set for g  in grammar.neighbors(start)]
         input_set = cleaner.duplicate_rm(input_set,sss)
         random.shuffle(input_set)
-        input_set= input_set[:numgr]
+        input_set= input_set[:bottleneck]
     # also needs duplicate removal
-    return input_set, grammar
+    
+    return input_set[:numgr], grammar
 
 
 

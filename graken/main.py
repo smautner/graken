@@ -11,11 +11,13 @@ import logging, sys
 logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
 
 from graken.ml import cost_estimator
+import random 
 from graken.ml import vector
 from graken.ml import neighbors
 from graken.pareto import grammar
 import dirtyopts as opts
 from graken.pareto import pareto
+import structout as so
 
 
 doc='''
@@ -23,6 +25,7 @@ doc='''
 --i str default:.taskfile
 --n_train int default:-1
 --taskid int default:0
+--shuffle int default:0     -> random seed for shuffling
 
 # INIT
 --v_radius int default:2  
@@ -42,7 +45,8 @@ doc='''
 # OPTIMIZER 
 --removedups 
 --n_iter int default:10
---pareto str default:default          ['default', 'random', 'greedy', 'pareto_only', 'all']
+--pareto str default:default          
+        ['default', 'random', 'greedy', 'paretogreed', 'pareto_only', 'all']
 --keepgraphs int default:30
 
 --out str default:res/out.txt
@@ -54,8 +58,10 @@ if __name__ == "__main__":
     ###################
     args = opts.parse(doc)
     logging.debug(args.__dict__)
-    graphs = loadfile(args.i)[0]
-
+    graphs = loadfile(args.i)
+    random.seed(args.shuffle)
+    random.shuffle(graphs)
+    #so.gprint(graphs[:3])
     domain = graphs[:args.n_train]
     target = graphs[-(args.taskid+1)]
     assert (args.n_train+args.taskid) < len(graphs)
@@ -88,12 +94,14 @@ if __name__ == "__main__":
                                 selektor_k= args.cipselector_k,
                                filter_min_cip= args.filter_min_cip,
                                nodelevel_radius_and_thickness=True)
+
     mygrammar.fit(ranked_graphs, vectorizer.transform([target]))
 
 
     # build estimator thing
     if args.pareto != 'greedy':
-        multiopesti = cost_estimator.DistRankSizeCostEstimator(vectorizer=vectorizer).fit(desired_distances, landmark_graphs, ranked_graphs)
+        multiopesti = cost_estimator.DistRankSizeCostEstimator(vectorizer=vectorizer)
+        multiopesti.fit(desired_distances, landmark_graphs, ranked_graphs)
     else:
         multiopesti = None
 

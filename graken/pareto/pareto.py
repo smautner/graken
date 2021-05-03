@@ -85,7 +85,8 @@ class LocalLandmarksDistanceOptimizer(object):
                 ranked_distances = np.argsort(distances)[0]
                 graphs = [graphs[i] for i in ranked_distances[:self.keepgraphs]]
             if self.paretofilter == 'random':
-                graphs = random.sample(graphs, self.keepgraphs)
+                numsample = min(self.keepgraphs, len(graphs))
+                graphs = random.sample(graphs, numsample)
         elif self.paretofilter == 'default':
                 graphs,done, frontsize = self._default_selector(graphs)
         else:
