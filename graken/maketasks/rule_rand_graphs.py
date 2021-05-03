@@ -1,35 +1,26 @@
 import random
-
-
-
 import graphlearn.util.util as u
-from exploration.pareto  import MYOPTIMIZER as myop
-
 import graphlearn.local_substitution_graph_grammar as lsgg
+from graken.ml import vector
 
 def rule_rand_graphs(input_set, numgr =100, iter= 1):
-
-
-
     # make grammar, fit on input
     grammar = lsgg.LocalSubstitutionGraphGrammar(radii=[1,2], thickness=1,
                  filter_min_cip=1, filter_min_interface=2, nodelevel_radius_and_thickness=True)#,
                  #cip_root_all = False,
                  #half_step_distance= False )
     grammar.fit(input_set)
-
-    cleaner = myop()
-    list(cleaner.duplicate_rm(input_set)) # makes sure that we never output the input. dup_rm saves all hashes
-
+    #grammar.structout()
+    cleaner = vector.Vectorizer()
+    
+    sss = {} # permanent banlist for graphs
+    start = cleaner.duplicate_rm(input_set,sss) # makes sure that we never output the input. dup_rm saves all hashes
     for i in range(iter):
         input_set = [g for start in input_set for g  in grammar.neighbors(start)]
-        input_set = cleaner.duplicate_rm(input_set)
+        input_set = cleaner.duplicate_rm(input_set,sss)
         random.shuffle(input_set)
         input_set= input_set[:numgr]
-
-
     # also needs duplicate removal
-
     return input_set, grammar
 
 

@@ -111,8 +111,8 @@ real_graph_edgelabeldistribution = np.array([141664, 67965, 49459, 41601, 26547,
 
 
 def make_graph_strict(nodes, nlabels, elabels, maxdegree=3, dist = 'real', allow_cycles=True):
-    edges =  edgedis_3deg(nodes) 
 
+    edges =  edgedis_3deg(nodes) 
     def makestat(numlab,repeats, dist):
         ob = dist[:numlab]
         ob /= sum(ob)
@@ -135,13 +135,16 @@ import graphlearn.lsgg_core_interface_pair as glcip
 from structout import gprint
 
 
-def make_graphs_static(number_of_graphs=100, size_of_graphs=5, node_labels=5, edge_labels=5, maxdeg=3,
-                       labeldistribution='real', allow_cycles=True):
+def make_graphs_static(ngraphs=100,
+                       graphsize=5,
+                       node_labels=5,
+                       edge_labels=5, maxdeg=3,
+                       labeldistribution='real', nocycles=False):
     l = []
     seen = {}
     failcount = 0
-    while len(l)< number_of_graphs:
-        g= make_graph_strict(size_of_graphs, node_labels, edge_labels, maxdeg, dist=labeldistribution, allow_cycles=allow_cycles)
+    while len(l)< ngraphs:
+        g= make_graph_strict(graphsize, node_labels, edge_labels, maxdeg, dist=labeldistribution, allow_cycles=not nocycles)
         harsch = glcip.graph_hash(edeng._edge_to_vertex_transform(g.copy()),get_node_label=lambda id,node:hash(node['label']))
         if harsch not in seen:
             seen[harsch] = 1

@@ -1,4 +1,5 @@
 from lmz import *
+import time
 
 
 
@@ -7,11 +8,12 @@ from ego.real_vectorize import graph_node_vectorize
 from sklearn.preprocessing import normalize as sknormalize
 import numpy as np
 
+import logging
 from eden.graph import Vectorizer as edenvec
 
 class Vectorizer():
 
-    def __init__(self, radius, distance, normalize):
+    def __init__(self, radius=3, distance=3, normalize=True):
         self.decompose = lambda gr: decompose_paired_neighborhoods(gr, max_radius=radius, max_distance=distance)
         self.norm = normalize
         self.vectorize = lambda graph: graph_node_vectorize(graph, self.decompose)
@@ -39,6 +41,21 @@ class Vectorizer():
             return hash(tuple(row.indices))
 
         return Map(hashor, csrs)
+
+    def duplicate_rm(self, graphs, seen_graphs):
+        timenow = time.time()
+        count = len(graphs)
+        graphs = list(self._duplicate_rm(graphs,seen_graphs))
+        logging.debug("duplicate_rm: %d -> %d graphs (%.2fs)" % (count, len(graphs), time.time() - timenow))
+        return graphs
+
+    def _duplicate_rm(self, graphs, seen_graphs):
+        hashes = self.hashvec(graphs)
+        for i, (ha, gr) in enumerate(zip(hashes, graphs)):
+            if ha not in seen_graphs:
+                seen_graphs[ha] = i
+                yield gr
+
 
 
 '''

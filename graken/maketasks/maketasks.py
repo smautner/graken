@@ -1,27 +1,66 @@
 import random
-from reconstruct2 import maketasks
-from util import random_graphs as rg, rule_rand_graphs as rrg
-from util.util import dumpfile
+from graken.maketasks import random_graphs as rg, rule_rand_graphs as rrg
+from graken.main import dumpfile
+import dirtyopts as opts
+import structout as so
 
+docStartgraphs='''
+# start graphs
+--nocycles 
+--ngraphs int default:30
+--graphsize int default:8
+--node_labels int default:4
+--edge_labels int default:2
+--labeldistribution str default:uniform
+--maxdeg int default:3
 '''
-ok so 
+
+docIter='''
+--numgr int default:501
+--iter int default:3
+--out str default:nugraphs
 '''
 
-def make_task_file():
-    import extensions.lsggscramble  as scram
-    data = scram.funmap(maketsk, tasklist,poolsize=20)
-    dumpfile(data, ".tasks")
-    #dumpfile([ rg.make_graphs_static(maxdeg=3, **args) for args in tasklist], ".tasks")
+
+if __name__=="__main__":
+    args = opts.parse(docStartgraphs)
+    startgraphs = rg.make_graphs_static(**args.__dict__)
+    so.gprint(startgraphs[:4])
+
+    args=opts.parse(docIter)
+    out  = args.__dict__.pop('out')
+    graphs = rrg.rule_rand_graphs(startgraphs, **args.__dict__)
+
+    dumpfile(graphs, out)
 
 
-def maketsk(args):
-    rrg_iter = args.pop("rrg_iter")
-    graphs = rg.make_graphs_static(**args)
-    if rrg_iter > 0:
-        graphs = rrg.rule_rand_graphs(graphs, numgr=500+EXPERIMENT_REPEATS,iter=rrg_iter)[0]
-    return graphs
+############
+#  CHEM STUFF COMES LATER 
+############# 
+'''
+def get_chem_filenames():
+    # these are size ~500
+    files="""AID1224837.sdf.json  AID1454.sdf.json  AID1987.sdf.json  AID618.sdf.json     AID731.sdf.json     AID743218.sdf.json  AID904.sdf.json AID1224840.sdf.json  AID1554.sdf.json  AID2073.sdf.json  AID720709.sdf.json  AID743202.sdf.json  AID828.sdf.json"""
+    # these are size ~4000
+    files="""AID119.sdf.json
+            AID1345082.sdf.json
+            AID588590.sdf.json
+            AID624202.sdf.json
+            AID977611.sdf.json"""
+    files = files.split()
+    return files
 
 
+def make_chem_task_file():
+    files = get_chem_filenames()
+    res=[]
+    for f in files:
+        stuff =load_chem("chemsets/"+f)
+        random.shuffle(stuff)
+        res.append(stuff)
+    dumpfile(res, ".chemtasks"
+    
+    
 def load_chem(AID):
     import json
     import networkx.readwrite.json_graph as sg
@@ -46,51 +85,4 @@ def load_chem(AID):
         res2 = [b for l,b in zomg[cut:-cut]]
     return res2
 
-
-def get_chem_filenames():
-    # these are size ~500
-    files="""AID1224837.sdf.json  AID1454.sdf.json  AID1987.sdf.json  AID618.sdf.json     AID731.sdf.json     AID743218.sdf.json  AID904.sdf.json AID1224840.sdf.json  AID1554.sdf.json  AID2073.sdf.json  AID720709.sdf.json  AID743202.sdf.json  AID828.sdf.json"""
-    # these are size ~4000
-    files='''AID119.sdf.json
-            AID1345082.sdf.json
-            AID588590.sdf.json
-            AID624202.sdf.json
-            AID977611.sdf.json'''
-    files = files.split()
-    return files
-
-
-def make_chem_task_file():
-    files = get_chem_filenames()
-    res=[]
-    for f in files:
-        stuff =load_chem("chemsets/"+f)
-        random.shuffle(stuff)
-        res.append(stuff)
-    dumpfile(res, ".chemtasks")
-
-
-EXPERIMENT_REPEATS = 50 #### CHANGE THIS BACK TO 100! 50 only for chemsets
-params_graphs = {
-    'keyorder' :  ["number_of_graphs", "size_of_graphs","node_labels","edge_labels","allow_cycles","labeldistribution","maxdeg","rrg_iter"],
-    'allow_cycles':[True], # cycles are very bad
-    'number_of_graphs': [30],
-    'size_of_graphs' :[8] ,
-    'node_labels' : [4],
-    'edge_labels' : [2], # using 5 here mega ga fails
-    'labeldistribution': ['uniform'] ,# real is unnecessary
-    'maxdeg':[3],
-    # rule rand graphs , iter argument ,
-    #0 means just use the rand graphs, a little hacky but works for now
-    'rrg_iter':[3]
-}
-tasklist  = maketasks(params_graphs ) # boring task list
-
-
-
-if __name__=="__main__":
-
-elif sys.argv[1]=="maketaskschem":
-    print("writing task file...")
-    make_chem_task_file()
-    exit()
+'''

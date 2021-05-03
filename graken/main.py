@@ -48,72 +48,72 @@ doc='''
 --out str default:res/out.txt
 '''
 
+if __name__ == "__main__":
+    ###################
+    # 1. LOAD
+    ###################
+    args = opts.parse(doc)
+    logging.debug(args.__dict__)
+    graphs = loadfile(args.i)[0]
 
-###################
-# 1. LOAD
-###################
-args = opts.parse(doc)
-logging.debug(args.__dict__)
-graphs = loadfile(args.i)[0]
-
-domain = graphs[:args.n_train]
-target = graphs[-(args.taskid+1)]
-assert (args.n_train+args.taskid) < len(graphs)
-
-
-#################
-# INIT
-##################
-# build a vectorizer for everything
-vectorizer = vector.Vectorizer(args.v_radius, args.v_distance, not args.v_nonormalize)
+    domain = graphs[:args.n_train]
+    target = graphs[-(args.taskid+1)]
+    assert (args.n_train+args.taskid) < len(graphs)
 
 
-# find neighbors/landmarks
-landmark_graphs, desired_distances, ranked_graphs = neighbors.initialize(
-                                                        n_landmarks=args.n_landmarks, 
-                                                        n_neighbors=args.n_neighbors, 
-                                                        vectorizer=vectorizer,
-                                                        graphs=domain,
-                                                        target=target)
+    #################
+    # INIT
+    ##################
+    # build a vectorizer for everything
+    vectorizer = vector.Vectorizer(args.v_radius, args.v_distance, not args.v_nonormalize)
 
 
+    # find neighbors/landmarks
+    landmark_graphs, desired_distances, ranked_graphs = neighbors.initialize(
+                                                            n_landmarks=args.n_landmarks, 
+                                                            n_neighbors=args.n_neighbors, 
+                                                            vectorizer=vectorizer,
+                                                            graphs=domain,
+                                                            target=target)
 
 
 
-mygrammar = grammar.gradigrammar(radii=list(range(args.maxcoresize+1)),
-                           thickness=args.contextsize,
-                           graphsizelimiter= args.size_limiter,
-                           vectorizer=vectorizer,
-                           selector=args.cipselector,
-                            selektor_k= args.cipselector_k,
-                           filter_min_cip= args.filter_min_cip,
-                           nodelevel_radius_and_thickness=True)
-mygrammar.fit(ranked_graphs, vectorizer.transform([target]))
 
 
-# build estimator thing
-if args.pareto != 'greedy':
-    multiopesti = cost_estimator.DistRankSizeCostEstimator(vectorizer=vectorizer).fit(desired_distances, landmark_graphs, ranked_graphs)
-else:
-    multiopesti = None
+    mygrammar = grammar.gradigrammar(radii=list(range(args.maxcoresize+1)),
+                               thickness=args.contextsize,
+                               graphsizelimiter= args.size_limiter,
+                               vectorizer=vectorizer,
+                               selector=args.cipselector,
+                                selektor_k= args.cipselector_k,
+                               filter_min_cip= args.filter_min_cip,
+                               nodelevel_radius_and_thickness=True)
+    mygrammar.fit(ranked_graphs, vectorizer.transform([target]))
+
+
+    # build estimator thing
+    if args.pareto != 'greedy':
+        multiopesti = cost_estimator.DistRankSizeCostEstimator(vectorizer=vectorizer).fit(desired_distances, landmark_graphs, ranked_graphs)
+    else:
+        multiopesti = None
 
 
 
-#############
-# Main loop
-##############
-# produce children
-# kill the unfit (while checking if we are done)
+    #############
+    # Main loop
+    ##############
+    # produce children
+    # kill the unfit (while checking if we are done)
 
-optimizer = pareto.LocalLandmarksDistanceOptimizer(
-            n_iter=args.n_iter,
-            keepgraphs=args.keepgraphs,
-            filter = args.pareto,
-            estimator = multiopesti,
-            vectorizer = vectorizer,
-            remove_duplicates = args.removedups,
-            grammar = mygrammar )
+    optimizer = pareto.LocalLandmarksDistanceOptimizer(
+                n_iter=args.n_iter,
+                keepgraphs=args.keepgraphs,
+                filter = args.pareto,
+                estimator = multiopesti,
+                vectorizer = vectorizer,
+                remove_duplicates = args.removedups,
+                grammar = mygrammar )
 
 
-result = optimizer.optimize(landmark_graphs, vectorizer.transform([target]))
-dumpfile(result, args.out)
+    result = optimizer.optimize(landmark_graphs, vectorizer.transform([target]))
+    dumpfile(result, args.out)

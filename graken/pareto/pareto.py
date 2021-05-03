@@ -150,19 +150,6 @@ class LocalLandmarksDistanceOptimizer(object):
     ################
     #  DUPLICATE RM 
     #################
-
-    def duplicate_rm(self, graphs):
-        timenow = time.time()
-        count = len(graphs)
-        graphs = list(self._duplicate_rm(graphs))
-        logging.debug("duplicate_rm: %d -> %d graphs (%.2fs)" % (count, len(graphs), time.time() - timenow))
-        return graphs
-
-    def _duplicate_rm(self, graphs):
-        hashes = self.vectorizer.hashvec(graphs)
-        for i, (ha, gr) in enumerate(zip(hashes, graphs)):
-            if ha not in self.seen_graphs:
-                self.seen_graphs[ha] = i
-                yield gr
-
+    def duplicate_rm(self, graph):
+        return self.vectorizer.duplicate_rm(graphs, self.seen_graphs) 
 
