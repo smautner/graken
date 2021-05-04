@@ -14,12 +14,11 @@ def rule_rand_graphs(input_set, numgr =100, iter= 1, bottleneck = 500):
     cleaner = vector.Vectorizer()
     
     sss = {} # permanent banlist for graphs
-    start = cleaner.duplicate_rm(input_set,sss) # makes sure that we never output the input. dup_rm saves all hashes
     for i in range(iter):
-        input_set = [g for start in input_set for g  in grammar.neighbors(start)]
-        input_set = cleaner.duplicate_rm(input_set,sss)
         random.shuffle(input_set)
+        input_set = cleaner.duplicate_rm(input_set,sss)
         input_set= input_set[:bottleneck]
+        input_set = [g for start in input_set for g  in grammar.neighbors(start)]
     # also needs duplicate removal
     
     return input_set[:numgr], grammar

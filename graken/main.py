@@ -64,7 +64,7 @@ if __name__ == "__main__":
     #so.gprint(graphs[:3])
     domain = graphs[:args.n_train]
     target = graphs[-(args.taskid+1)]
-    assert (args.n_train+args.taskid) < len(graphs)
+    assert (args.n_train+args.taskid) < len(graphs) , f"{args.n_train} {args.taskid} {len(graphs)}"
 
 
     #################
