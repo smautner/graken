@@ -87,9 +87,8 @@ if __name__ == "__main__":
                                                             graphs=domain,
                                                             target=target)
 
-
+    
     logging.debug(f"finding landmarks done {time.time()-t:.3}s")
-
 
     t = time.time()
     mygrammar = grammar.gradigrammar(radii=list(range(args.maxcoresize+1)),

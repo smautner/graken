@@ -21,6 +21,7 @@ def rule_rand_graphs(input_set, numgr =100, iter= 1, bottleneck = 500):
         input_set = [g for start in input_set for g  in grammar.neighbors(start)]
     # also needs duplicate removal
     
+    input_set = cleaner.duplicate_rm(input_set,sss)
     return input_set[:numgr], grammar
 
 
