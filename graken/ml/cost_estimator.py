@@ -147,7 +147,6 @@ class InstancesDistanceCostEstimator():
         x = self.vectorizer.transform(graphs)
         avg_distance_diff = np.array([self._avg_distance_diff(vec)
                                       for vec in x])
-
         avg_distance_diff = avg_distance_diff.reshape(-1, 1)
         return avg_distance_diff
 

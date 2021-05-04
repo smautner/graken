@@ -10,6 +10,8 @@ jloadfile = lambda filename:  json.loads(open(filename,'r').read())
 import logging, sys
 logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
 
+import random
+import time
 from graken.ml import cost_estimator
 import random 
 from graken.ml import vector
@@ -22,7 +24,7 @@ import structout as so
 
 doc='''
 # LOAD 
---i str default:.taskfile
+--i str default:tasks/task_0
 --n_train int default:-1
 --taskid int default:0
 --shuffle int default:0     -> random seed for shuffling
@@ -56,6 +58,7 @@ if __name__ == "__main__":
     ###################
     # 1. LOAD
     ###################
+    t = time.time()
     args = opts.parse(doc)
     logging.debug(args.__dict__)
     graphs = loadfile(args.i)
@@ -65,6 +68,7 @@ if __name__ == "__main__":
     domain = graphs[:args.n_train]
     target = graphs[-(args.taskid+1)]
     assert (args.n_train+args.taskid) < len(graphs) , f"{args.n_train} {args.taskid} {len(graphs)}"
+    logging.debug(f"loading done ({time.time() -t:.2}s)")
 
 
     #################
@@ -75,6 +79,7 @@ if __name__ == "__main__":
 
 
     # find neighbors/landmarks
+    t= time.time()
     landmark_graphs, desired_distances, ranked_graphs = neighbors.initialize(
                                                             n_landmarks=args.n_landmarks, 
                                                             n_neighbors=args.n_neighbors, 
@@ -83,9 +88,10 @@ if __name__ == "__main__":
                                                             target=target)
 
 
+    logging.debug(f"finding landmarks done {time.time()-t:.3}s")
 
 
-
+    t = time.time()
     mygrammar = grammar.gradigrammar(radii=list(range(args.maxcoresize+1)),
                                thickness=args.contextsize,
                                graphsizelimiter= args.size_limiter,
@@ -97,14 +103,17 @@ if __name__ == "__main__":
 
     mygrammar.fit(ranked_graphs, vectorizer.transform([target]))
 
+    logging.debug(f"fit grammar done {time.time()-t:.2}s")
 
     # build estimator thing
     if args.pareto != 'greedy':
+        time.sleep(random.randint(0,4)*15)
+        t = time.time()
         multiopesti = cost_estimator.DistRankSizeCostEstimator(vectorizer=vectorizer)
         multiopesti.fit(desired_distances, landmark_graphs, ranked_graphs)
+        logging.debug(f"fit multiopesti done {time.time()-t:.2}s")
     else:
         multiopesti = None
-
 
 
     #############

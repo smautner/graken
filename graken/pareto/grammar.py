@@ -32,7 +32,7 @@ class gradigrammar(lsgg):
         super(gradigrammar, self).fit(graphs)
         self.genmaxsize = self.graphsizelimiter(np.array([len(g) + g.size() for g in graphs]))
         self.target= target
-        logging.debug("grammar generation: %.2fs ({len(graphs)} graphs)" % (time.time() - timenow))
+        logging.debug(f"grammar generation: %.2fs ({len(graphs)} graphs)" % (time.time() - timenow))
         logging.debug(f"graphsizelimit: {self.genmaxsize}")
     
 

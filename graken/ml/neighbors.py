@@ -1,7 +1,7 @@
 
 
 import structout as so
-from sklearn.neighbors import NearestNeighbors
+from sklearn.neighbors import NearestNeighbors as neigh
 
 import logging
 
@@ -10,12 +10,10 @@ def initialize(n_landmarks=10, n_neighbors=100, vectorizer=None, graphs=None, ta
     
         assert n_neighbors < len(graphs)
 
-        vecs = vectorizer.transform(graphs)
-        nn = NearestNeighbors(n_neighbors=n_neighbors).fit(vecs)
-        
+        vecs = vectorizer.init(graphs)
+        nn = neigh(n_neighbors=n_neighbors,metric='cosine').fit(vecs)
 
-
-        target_vec = vectorizer.transform([target])
+        target_vec = vectorizer.init([target])
         distances, neighbors = nn.kneighbors(target_vec, return_distance=True)
         
         distances = distances[0]

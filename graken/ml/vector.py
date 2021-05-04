@@ -33,14 +33,27 @@ class Vectorizer():
         # addition and subtraction of core-vectors need to happen in raw format
         return  self.vectorize(graph)
 
+    
 
+
+
+    ##################
+    # INITIAL GRAPH SORTING
+    ####################
+    def init(self, graphs):
+        '''
+            initial neighbor finding.. 
+        '''
+        vec = edenvec(r=3,d=3,nbits=14, normalization = True, inner_normalization= True)    
+        return vec.transform(graphs)
+
+
+    ##############
+    # hashing 
+    ##############
     def hashvec(self,graphs):
         csrs =  self.hasher.transform(graphs)
-
-        def hashor(row):
-            return hash(tuple(row.indices))
-
-        return Map(hashor, csrs)
+        return Map(lambda row: hash(tuple(row.indices)), csrs)
 
     def duplicate_rm(self, graphs, seen_graphs):
         timenow = time.time()
