@@ -15,13 +15,14 @@ def rule_rand_graphs(input_set, numgr =100, iter= 1, bottleneck = 500):
     
     sss = {} # permanent banlist for graphs
     for i in range(iter):
-        random.shuffle(input_set)
         input_set = cleaner.duplicate_rm(input_set,sss)
+        random.shuffle(input_set)
         input_set= input_set[:bottleneck]
         input_set = [g for start in input_set for g  in grammar.neighbors(start)]
     # also needs duplicate removal
     
     input_set = cleaner.duplicate_rm(input_set,sss)
+    random.shuffle(input_set)
     return input_set[:numgr], grammar
 
 
