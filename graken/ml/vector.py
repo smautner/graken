@@ -7,6 +7,7 @@ from ego.decomposition.paired_neighborhoods import decompose_paired_neighborhood
 from ego.real_vectorize import graph_node_vectorize
 from sklearn.preprocessing import normalize as sknormalize
 import numpy as np
+from scipy.sparse import csr_matrix
 
 import logging
 from eden.graph import Vectorizer as edenvec
@@ -22,7 +23,9 @@ class Vectorizer():
     def transform(self,graphs):
         # should i use this instead? from ego.vectorize import vectorize
         r = np.vstack(Map(self.vectorize,graphs))
-        return self.normalize(r)
+        re = self.normalize(r)
+        re = csr_matrix(re)
+        return re
 
     def normalize(self, ndarr):
         if self.norm:

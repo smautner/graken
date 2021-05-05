@@ -151,6 +151,6 @@ class LocalLandmarksDistanceOptimizer(object):
     ################
     #  DUPLICATE RM 
     #################
-    def duplicate_rm(self, graph):
+    def duplicate_rm(self, graphs):
         return self.vectorizer.duplicate_rm(graphs, self.seen_graphs) 
 

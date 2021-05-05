@@ -170,6 +170,7 @@ class RankBiasCostEstimator():
     def fit(self, ranked_graphs):
         """fit."""
         x = self.vectorizer.transform(ranked_graphs)
+        
         r, c = x.shape
         pos = []
         neg = []
@@ -180,14 +181,14 @@ class RankBiasCostEstimator():
                 pos.append(p)
                 neg.append(n)
         y = np.array([1] * len(pos) + [-1] * len(neg))
-
+        
         #from pprint import pprint
         #pprint([e.shape for e in pos])
         #pos = sp.sparse.vstack(pos)
         #neg = sp.sparse.vstack(neg)
-        pos=csr_matrix(pos)
-        neg=csr_matrix(neg)
-        x_ranks = sp.sparse.vstack([pos, neg])
+        #pos=csr_matrix(pos)
+        #neg=csr_matrix(neg)
+        x_ranks = sp.sparse.vstack(pos+neg)
         logging.debug('fitting: %s' % describe(x_ranks))
         self.estimator = self.estimator.fit(x_ranks, y)
         return self
