@@ -1,10 +1,9 @@
 from lmz import *
 import time
 
-
+from ego import real_vectorize as rv
 
 from ego.decomposition.paired_neighborhoods import decompose_paired_neighborhoods
-from ego.real_vectorize import graph_node_vectorize
 from sklearn.preprocessing import normalize as sknormalize
 import numpy as np
 from scipy.sparse import csr_matrix
@@ -17,9 +16,17 @@ class Vectorizer():
     def __init__(self, radius=3, distance=3, normalize=True):
         self.decompose = lambda gr: decompose_paired_neighborhoods(gr, max_radius=radius, max_distance=distance)
         self.norm = normalize
-        self.vectorize = lambda graph: graph_node_vectorize(graph, self.decompose)
+
+
         self.hasher = edenvec(r=2,d=1, normalization = False, inner_normalization= False)    
-     
+    def vectorize(self, graph):
+        # TODO vextorize dioes as grammar does and then sum axis 0 
+        encoding, node_ids = rv.node_encode_graph(graph, rv.tz.compose(
+                rv.get_subgraphs_from_graph_component, self.decompose, rv.convert),
+                        bitmask= 2**16-1)
+        data_matrix = rv._to_sparse_matrix(encoding, node_ids, 2**16+1)
+        return data_matrix.sum(axis=0)
+
     def transform(self,graphs):
         # should i use this instead? from ego.vectorize import vectorize
         r = np.vstack(Map(self.vectorize,graphs))
@@ -38,17 +45,6 @@ class Vectorizer():
 
     
 
-
-
-    ##################
-    # INITIAL GRAPH SORTING
-    ####################
-    def init(self, graphs):
-        '''
-            initial neighbor finding.. 
-        '''
-        vec = edenvec(r=3,d=3,nbits=14, normalization = True, inner_normalization= True)    
-        return vec.transform(graphs)
 
 
     ##############

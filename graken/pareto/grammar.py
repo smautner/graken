@@ -31,7 +31,7 @@ class gradigrammar(lsgg):
         timenow = time.time()
         super(gradigrammar, self).fit(graphs)
         self.genmaxsize = self.graphsizelimiter(np.array([len(g) + g.size() for g in graphs]))
-        self.target= target
+        self.target= target.toarray().T
         logging.debug(f"grammar generation: %.2fs ({len(graphs)} graphs)" % (time.time() - timenow))
         logging.debug(f"graphsizelimit: {self.genmaxsize}")
     
@@ -66,7 +66,7 @@ class gradigrammar(lsgg):
         vec = self.vectorizer.raw(graph)
         current_cips = self._get_cips(graph)
         for current_cip in current_cips:
-            if productions := [(graph,vec, current_cip,concip) for concip in self._get_congruent_cips(current_cip) 
+            if productions := [(graph, vec, current_cip,concip) for concip in self._get_congruent_cips(current_cip) 
                     if len(concip.core_nodes) + grlen - len(current_cip.core_nodes) <= self.genmaxsize]:
                 pdict[self.mkkey(grid, current_cip.interface_hash)]+= productions
 
@@ -83,8 +83,15 @@ class gradigrammar(lsgg):
             return: selctor_k best productions in the list
         '''
         # score productions:
-        myvectors= [self.vectorizer.normalize(vec - cur.core_vec + con.core_vec) for gra,vec,cur,con in stuff]
-        predicted_vectors = np.vstack(myvectors)
-        scores = np.dot(predicted_vectors, self.target.T)
+        #from graken.main import dumpfile
+
+
+        myvectors = np.empty((len(stuff),stuff[0][1].shape[1]))
+        for i,(gra,vec,cur,con) in enumerate(stuff):
+            myvectors[i] = vec  - cur.core_vec + con.core_vec
+
+        #myvectors = np.vstack([vec - cur.core_vec + con.core_vec for gra,vec,cur,con in stuff]) 
+        myvectors = self.vectorizer.normalize(myvectors)
+        scores = np.dot(myvectors, self.target)
         goodindex = np.argsort(scores.T)[0][-self.selelector_k:]
         return [ (stuff[i][0],stuff[i][2], stuff[i][3]) for i in goodindex]

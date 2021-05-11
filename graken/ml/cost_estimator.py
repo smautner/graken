@@ -31,7 +31,8 @@ class MultiObjectiveCostEstimator(object):
 
     def decision_function(self, graphs):
         """decision_function."""
-        cost_vec = [estimator.decision_function(graphs)
+        x = self.vec.transform(graphs)
+        cost_vec = [estimator.decision_function(graphs,x)
                     for estimator in self.estimators]
         costs = np.hstack(cost_vec)
         return costs
@@ -96,10 +97,13 @@ class DistRankSizeCostEstimator(MultiObjectiveCostEstimator):
             reference_graphs,
             ranked_graphs):
         """fit."""
-        d_est = InstancesDistanceCostEstimator(self.vec, multiproc=self.multiproc, squared_error=self.squared_error)
+        d_est = InstancesDistanceCostEstimator(self.vec, 
+                    multiproc=self.multiproc,
+                    squared_error=self.squared_error)
         d_est.fit(desired_distances, reference_graphs)
+
         # rank opti: true better. tested 2018-09-17
-        b_est = RankBiasCostEstimator(self.vec, improve=True, multiproc = self.multiproc) 
+        b_est = RankBiasCostEstimator(self.vec, improve=False, multiproc = self.multiproc) 
         b_est.fit(ranked_graphs)
 
         s_est = SizeCostEstimator()
@@ -142,9 +146,10 @@ class InstancesDistanceCostEstimator():
 
 
 
-    def decision_function(self, graphs):
+    def decision_function(self, graphs,x):
         """predict_distance."""
-        x = self.vectorizer.transform(graphs)
+        if x ==None:
+            x = self.vectorizer.transform(graphs)
         avg_distance_diff = np.array([self._avg_distance_diff(vec)
                                       for vec in x])
         avg_distance_diff = avg_distance_diff.reshape(-1, 1)
@@ -166,6 +171,7 @@ class RankBiasCostEstimator():
                                        class_weight='balanced',
                                        shuffle=True)
         self.improve = improve
+	
 
     def fit(self, ranked_graphs):
         """fit."""
@@ -180,6 +186,7 @@ class RankBiasCostEstimator():
                 n = - p
                 pos.append(p)
                 neg.append(n)
+
         y = np.array([1] * len(pos) + [-1] * len(neg))
         
         #from pprint import pprint
@@ -193,9 +200,32 @@ class RankBiasCostEstimator():
         self.estimator = self.estimator.fit(x_ranks, y)
         return self
 
-    def decision_function(self, graphs):
+    '''
+    def fit(self, ranked_graphs):
+        """fit."""
+        x = self.vectorizer.transform(ranked_graphs)
+        r, c = x.shape
+        pos = []
+        neg = []
+        for i in range(r - 1):
+            for j in range(i + 1, r):
+                p = x[i] - x[j]
+                n = - p
+                pos.append(p)
+                neg.append(n)
+        y = np.array([1] * len(pos) + [-1] * len(neg))
+        pos = sp.sparse.vstack(pos)
+        neg = sp.sparse.vstack(neg)
+        x_ranks = sp.sparse.vstack([pos, neg])
+        logging.debug('fitting: %s' % describe(x_ranks))
+        self.estimator = self.estimator.fit(x_ranks, y)
+        return self
+    '''
+
+    def decision_function(self, graphs,x):
         """decision_function."""
-        x = self.vectorizer.transform(graphs)
+        if x == None:
+            x = self.vectorizer.transform(graphs)
         scores = self.estimator.decision_function(x)
         if self.improve is False:
             scores = np.absolute(scores)
@@ -221,7 +251,7 @@ class SizeCostEstimator(object):
             [self._graph_size(g) for g in graphs], 50)
         return self
 
-    def decision_function(self, graphs):
+    def decision_function(self, graphs, x):
         """decision_function."""
         sizes = np.array([self._graph_size(g) for g in graphs])
         size_diffs = np.absolute(sizes - self.reference_size)

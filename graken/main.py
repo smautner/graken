@@ -20,7 +20,7 @@ from graken.pareto import grammar
 import dirtyopts as opts
 from graken.pareto import pareto
 import structout as so
-
+import eden.graph as eg
 
 doc='''
 # LOAD 
@@ -58,17 +58,18 @@ if __name__ == "__main__":
     ###################
     # 1. LOAD
     ###################
-    t = time.time()
     args = opts.parse(doc)
     logging.debug(args.__dict__)
+
     graphs = loadfile(args.i)
     random.seed(args.shuffle)
     random.shuffle(graphs)
-    #so.gprint(graphs[:3])
+
     domain = graphs[:args.n_train]
     target = graphs[-(args.taskid+1)]
+
     assert (args.n_train+args.taskid) < len(graphs) , f"{args.n_train} {args.taskid} {len(graphs)}"
-    logging.debug(f"loading done ({time.time() -t:.2}s)")
+    logging.debug(f"loading done")
 
 
     #################
@@ -76,20 +77,21 @@ if __name__ == "__main__":
     ##################
     # build a vectorizer for everything
     vectorizer = vector.Vectorizer(args.v_radius, args.v_distance, not args.v_nonormalize)
-
+    estiandinitvec = eg.Vectorizer(r=3, d=3)
 
     # find neighbors/landmarks
-    t= time.time()
     landmark_graphs, desired_distances, ranked_graphs = neighbors.initialize(
                                                             n_landmarks=args.n_landmarks, 
                                                             n_neighbors=args.n_neighbors, 
-                                                            vectorizer=vectorizer,
+                                                            vectorizer=estiandinitvec,
                                                             graphs=domain,
                                                             target=target)
 
-    
-    logging.debug(f"finding landmarks done {time.time()-t:.3}s")
 
+
+
+    
+    # fit grammar
     t = time.time()
     mygrammar = grammar.gradigrammar(radii=list(range(args.maxcoresize+1)),
                                thickness=args.contextsize,
@@ -99,16 +101,17 @@ if __name__ == "__main__":
                                 selektor_k= args.cipselector_k,
                                filter_min_cip= args.filter_min_cip,
                                nodelevel_radius_and_thickness=True)
-
     mygrammar.fit(ranked_graphs, vectorizer.transform([target]))
-
     logging.debug(f"fit grammar done {time.time()-t:.2}s")
 
-    # build estimator thing
+
+
+    # build estimator
     if args.pareto != 'greedy':
-        time.sleep(random.randint(0,4)*15)
+        #time.sleep(random.randint(0,4)*15)
         t = time.time()
-        multiopesti = cost_estimator.DistRankSizeCostEstimator(vectorizer=vectorizer)
+        #multiopesti = cost_estimator.DistRankSizeCostEstimator(vectorizer=vectorizer)
+        multiopesti = cost_estimator.DistRankSizeCostEstimator(vectorizer=estiandinitvec)
         multiopesti.fit(desired_distances, landmark_graphs, ranked_graphs)
         logging.debug(f"fit multiopesti done {time.time()-t:.2}s")
     else:
@@ -118,18 +121,19 @@ if __name__ == "__main__":
     #############
     # Main loop
     ##############
-    # produce children
-    # kill the unfit (while checking if we are done)
-
     optimizer = pareto.LocalLandmarksDistanceOptimizer(
                 n_iter=args.n_iter,
                 keepgraphs=args.keepgraphs,
                 filter = args.pareto,
                 estimator = multiopesti,
                 vectorizer = vectorizer,
+                greedyvec = estiandinitvec,
                 remove_duplicates = args.removedups,
                 grammar = mygrammar )
 
-
-    result = optimizer.optimize(landmark_graphs, vectorizer.transform([target]))
+    ######
+    #  DONE
+    ###### 
+    result = optimizer.optimize(landmark_graphs, estiandinitvec.transform([target]))
+    so.gprint(target)
     dumpfile(result, args.out)

@@ -24,6 +24,7 @@ class LocalLandmarksDistanceOptimizer(object):
             filter = 'default',
             estimator = None,
             vectorizer = None,
+            greedyvec = None,
             remove_duplicates = True,
             grammar = None):
             
@@ -33,6 +34,7 @@ class LocalLandmarksDistanceOptimizer(object):
         self.keepgraphs = keepgraphs
         self.n_iter = n_iter
         self.vectorizer = vectorizer
+        self.greedyvectorizer = greedyvec
         self.rmdup = remove_duplicates
         
         self.seen_graphs = {}
@@ -79,7 +81,7 @@ class LocalLandmarksDistanceOptimizer(object):
         in_count = len(graphs)
         frontsize=''
         if self.paretofilter in ['greedy', 'random'] or len(graphs) < self.keepgraphs:
-            distances = euclidean_distances(self.target, self.vectorizer.transform(graphs))
+            distances = euclidean_distances(self.target, self.greedyvectorizer.transform(graphs))
             done = distances.min() < 0.0001
             if self.paretofilter == 'greedy':
                 ranked_distances = np.argsort(distances)[0]
