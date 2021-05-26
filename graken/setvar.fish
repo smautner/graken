@@ -1,4 +1,0 @@
-set -x 'MKL_NUM_THREADS' 1 
-set -x 'NUMBA_NUM_THREADS' 1
-set -x 'OMP_NUM_THREADS' 1
-set -x 'OPENBLAS_NUM_THREADS' 1
