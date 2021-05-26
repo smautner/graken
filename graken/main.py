@@ -24,34 +24,34 @@ import eden.graph as eg
 
 doc='''
 # LOAD 
---i str default:tasks/task_0
---n_train int default:-1
---taskid int default:0
---shuffle int default:0     -> random seed for shuffling
+--i str tasks/task_0
+--n_train int -1
+--taskid int 0
+--shuffle int 0     -> random seed for shuffling
 
 # INIT
---v_radius int default:2  
---v_distance int default:1  
---v_nonormalize
---n_landmarks int default:10
---n_neighbors int default:100
+--v_radius int 2  
+--v_distance int 1  
+--v_nonormalize bool False
+--n_landmarks int 10
+--n_neighbors int 100
 
 # GRAMMAR
---maxcoresize int default:2 
---contextsize int default:1
---filter_min_cip int default:2
---cipselector int default:2           0 -> k is on populationlevel , 1 -> k is io graphlevel ,2 -> k is on ciplevel
---cipselector_k int default:1
---size_limiter eval default:lambda x: x.max()+(int(x.std()))
+--maxcoresize int 2 
+--contextsize int 1
+--filter_min_cip int 2
+--cipselector int 2           0 -> k is on populationlevel , 1 -> k is io graphlevel ,2 -> k is on ciplevel
+--cipselector_k int 1
+--size_limiter eval lambda x:x.max()+(int(x.std()))
 
 # OPTIMIZER 
---removedups 
---n_iter int default:10
---pareto str default:default          
+--removedups bool False
+--n_iter int 10
+--pareto str default          
         ['default', 'random', 'greedy', 'paretogreed', 'pareto_only', 'all']
---keepgraphs int default:30
+--keepgraphs int 30
 
---out str default:res/out.txt
+--out str res/out.txt
 '''
 
 if __name__ == "__main__":
