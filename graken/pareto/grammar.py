@@ -17,7 +17,7 @@ class gradigrammar(lsgg):
 
     def __init__(self,graphsizelimiter= None,
                  vectorizer=None,
-                 selector =2,
+                 selector = 'cip',
                  selektor_k=1, **kwargs): # expected kwargs: radii thickness filter_min_cip
         kwargs['core_vec_decomposer']=vectorizer.decompose
         self.vectorizer = vectorizer
@@ -27,10 +27,10 @@ class gradigrammar(lsgg):
         self.graphsizelimiter = graphsizelimiter
 
 
-    def fit(self,graphs, target):
+    def fit(self,graphs,landmarks, target):
         timenow = time.time()
         super(gradigrammar, self).fit(graphs)
-        self.genmaxsize = self.graphsizelimiter(np.array([len(g) + g.size() for g in graphs]))
+        self.genmaxsize = self.graphsizelimiter(np.array([len(g) + g.size() for g in landmarks]))
         self.target= target.toarray().T
         logging.debug(f"grammar generation: %.2fs ({len(graphs)} graphs)" % (time.time() - timenow))
         logging.debug(f"graphsizelimit: {self.genmaxsize}")
@@ -40,9 +40,9 @@ class gradigrammar(lsgg):
         '''
         the plan: 
         - there are 3 cip selectors:
-        - 0: [graph, cip_congr]
-        - 1: [graph,cc][graph,cc]
-        - 2: same as one but there is a list for each start-cip now
+        - pop: [graph, cip_congr]
+        - graph: [graph,cc][graph,cc]
+        - cip: same as one but there is a list for each start-cip now
         once i have the lists i can select the select_k best ones
         i guess i can just throw everything on a default dict with the key as something that ids the list  
         '''
@@ -62,7 +62,7 @@ class gradigrammar(lsgg):
         return graphs
 
     def get_productions(self, pdict, graph,grid):
-        grlen = len(graph)
+        grlen = len(graph) + graph.size()
         vec = self.vectorizer.raw(graph)
         current_cips = self._get_cips(graph)
         for current_cip in current_cips:
@@ -71,9 +71,9 @@ class gradigrammar(lsgg):
                 pdict[self.mkkey(grid, current_cip.interface_hash)]+= productions
 
     def mkkey(self, grid, ihash):
-        if self.selelector == 0:
+        if self.selelector == 'pop':
             return 0
-        elif self.selelector ==1:
+        elif self.selelector =='graph':
             return grid
         return f"{grid}_{ihash}"
 
@@ -81,7 +81,7 @@ class gradigrammar(lsgg):
         '''
             stuff is a list:[startgraph,startgraph_vec, cip_con, cip_congru]
             return: selctor_k best productions in the list
-        '''
+        '''
         # score productions:
         #from graken.main import dumpfile
 
@@ -93,5 +93,36 @@ class gradigrammar(lsgg):
         #myvectors = np.vstack([vec - cur.core_vec + con.core_vec for gra,vec,cur,con in stuff]) 
         myvectors = self.vectorizer.normalize(myvectors)
         scores = np.dot(myvectors, self.target)
-        goodindex = np.argsort(scores.T)[0][-self.selelector_k:]
+        goodindex = np.argsort(scores.T)[0]
+        goodindex = goodindex[-self.selelector_k:] 
         return [ (stuff[i][0],stuff[i][2], stuff[i][3]) for i in goodindex]
+
+
+
+from graphlearn import local_substitution_graph_grammar as grammarcore
+
+class sizecutgrammar(grammarcore.LocalSubstitutionGraphGrammarCore):
+
+    def __init__(self,graphsizelimiter, **kwargs):
+        super(sizecutgrammar,self).__init__(**kwargs)
+        self.graphsizelimiter = graphsizelimiter
+
+
+    def fit(self,graphs,landmarks):
+        self.genmaxsize = self.graphsizelimiter(np.array([len(g) + g.size() for g in landmarks]))
+        super(sizecutgrammar,self).fit(graphs)
+
+
+    def expand_neighbors(self, graphs):
+        timemid = time.time()
+        r =  [ n for graph in graphs for  n in self.neighbors(graph)]
+        logging.debug(f"expand neighbors: generating graphs  ({time.time() - timemid:.3}s )")
+        return r 
+    def neighbors(self, graph):
+        grsize = len(graph) + graph.size()
+        for cip in self._get_cips(graph):
+            for congruent_cip in self._get_congruent_cips(cip):
+                if grsize - len(cip.core_nodes) + len(congruent_cip.core_nodes) <= self.genmaxsize:
+                    graph_ = self._substitute_core(graph, cip, congruent_cip)
+                    if graph_ is not None:
+                        yield graph_

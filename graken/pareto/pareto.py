@@ -62,7 +62,6 @@ class LocalLandmarksDistanceOptimizer(object):
             if self.rmdup:
                 graphs = self.duplicate_rm(graphs)
 
-
         logging.debug('\n'+so.graph.make_picture(random.sample(graphs,3), edgelabel='label', size=10))
         logging.debug(f"success: {done}")
         return done, i , time.time() - starttime
@@ -91,7 +90,7 @@ class LocalLandmarksDistanceOptimizer(object):
                 graphs = random.sample(graphs, numsample)
         elif self.paretofilter == 'default':
                 graphs,done, frontsize = self._default_selector(graphs)
-        else:
+        elif self.paretofilter in ['pareto_only','paretogreed','all']:
             costs = self.estimator.decision_function(graphs)
             graphs, costs = pareto_funcs._pareto_set(graphs, costs, return_costs=True)
             costs = self._add_rank(costs) # costs = distances rank size
@@ -108,7 +107,10 @@ class LocalLandmarksDistanceOptimizer(object):
             elif self.paretofilter == 'paretogreed':
                 graphs = [graphs[x] for x in np.argsort(costs[:,3])[:self.keepgraphs]]
                 
-
+        elif self.paretofilter == 'geometric':
+            z =  self.estimator.get_k_best(graphs, self.keepgraphs)
+            graphs, done = z
+    
         logging.log(10, f"cost_filter: got {in_count} graphs (pareto:{frontsize}), reduced to {len(graphs)} (%.2fs)"%(time.time()-timenow))
 
         # print

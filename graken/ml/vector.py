@@ -18,9 +18,10 @@ class Vectorizer():
         self.norm = normalize
 
 
-        self.hasher = edenvec(r=2,d=1, normalization = False, inner_normalization= False)    
+        self.hasher = edenvec(r=2,d=1, normalization = False, inner_normalization= False)
+
     def vectorize(self, graph):
-        # TODO vextorize dioes as grammar does and then sum axis 0 
+        #  vextorize dioes as grammar does and then sum axis 0 
         encoding, node_ids = rv.node_encode_graph(graph, rv.tz.compose(
                 rv.get_subgraphs_from_graph_component, self.decompose, rv.convert),
                         bitmask= 2**16-1)

@@ -1,4 +1,5 @@
 import json
+import sys # for exit :) 
 import dill
 
 dumpfile = lambda thing, filename: dill.dump(thing, open(filename, "wb"))
@@ -12,7 +13,7 @@ logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
 
 import random
 import time
-from graken.ml import cost_estimator
+from graken.ml import cost_estimator, cost_estimator_ego_real as CEER
 import random 
 from graken.ml import vector
 from graken.ml import neighbors
@@ -32,7 +33,7 @@ doc='''
 # INIT
 --v_radius int 2  
 --v_distance int 1  
---v_nonormalize bool False
+--v_normalize bool True
 --n_landmarks int 10
 --n_neighbors int 100
 
@@ -40,9 +41,9 @@ doc='''
 --maxcoresize int 2 
 --contextsize int 1
 --filter_min_cip int 2
---cipselector int 2           0 -> k is on populationlevel , 1 -> k is io graphlevel ,2 -> k is on ciplevel
+--cipselector str cip assert pop graph cip           
 --cipselector_k int 1
---size_limiter eval lambda x:x.max()+(int(x.std()))
+--size_limiter eval lambda x: int(sum(x)/len(x))+(int(x.std()))
 
 # OPTIMIZER 
 --removedups bool False
@@ -76,7 +77,7 @@ if __name__ == "__main__":
     # INIT
     ##################
     # build a vectorizer for everything
-    vectorizer = vector.Vectorizer(args.v_radius, args.v_distance, not args.v_nonormalize)
+    vectorizer = vector.Vectorizer(args.v_radius, args.v_distance, args.v_normalize)
     estiandinitvec = eg.Vectorizer(r=3, d=3)
 
     # find neighbors/landmarks
@@ -93,29 +94,40 @@ if __name__ == "__main__":
     
     # fit grammar
     t = time.time()
-    mygrammar = grammar.gradigrammar(radii=list(range(args.maxcoresize+1)),
-                               thickness=args.contextsize,
-                               graphsizelimiter= args.size_limiter,
-                               vectorizer=vectorizer,
-                               selector=args.cipselector,
-                                selektor_k= args.cipselector_k,
-                               filter_min_cip= args.filter_min_cip,
-                               nodelevel_radius_and_thickness=True)
-    mygrammar.fit(ranked_graphs, vectorizer.transform([target]))
+    if False:
+        mygrammar = grammar.gradigrammar(radii=list(range(args.maxcoresize+1)),
+                                   thickness=args.contextsize,
+                                   graphsizelimiter= args.size_limiter,
+                                   vectorizer=vectorizer,
+                                   selector=args.cipselector,
+                                    selektor_k= args.cipselector_k,
+                                   filter_min_cip= args.filter_min_cip,
+                                   nodelevel_radius_and_thickness=True)
+        mygrammar.fit(ranked_graphs,landmark_graphs, vectorizer.transform([target]))
+    else: 
+        print(f" USING EXPERIMENTAL GRMAMAR I SHOULD UNDO THIS :) ")
+        mygrammar = grammar.sizecutgrammar(args.size_limiter, 
+                                    radii=list(range(args.maxcoresize+1)),
+                                   thickness=args.contextsize,
+                                   filter_min_cip= args.filter_min_cip,
+                                   nodelevel_radius_and_thickness=True)
+        mygrammar.fit(ranked_graphs,landmark_graphs)
     logging.debug(f"fit grammar done {time.time()-t:.2}s")
 
 
 
     # build estimator
-    if args.pareto != 'greedy':
+    t = time.time()
+    if args.pareto == "greedy":
+        multiopesti  = None
+    elif args.pareto == 'geometric':
+        multiopesti = CEER.egoestimator(target, landmark_graphs,debug=True) # TODO rm debug :)
+    else:
         #time.sleep(random.randint(0,4)*15)
-        t = time.time()
         #multiopesti = cost_estimator.DistRankSizeCostEstimator(vectorizer=vectorizer)
         multiopesti = cost_estimator.DistRankSizeCostEstimator(vectorizer=estiandinitvec)
         multiopesti.fit(desired_distances, landmark_graphs, ranked_graphs)
-        logging.debug(f"fit multiopesti done {time.time()-t:.2}s")
-    else:
-        multiopesti = None
+    logging.debug(f"fit multiopesti done {time.time()-t:.2}s")
 
 
     #############
@@ -135,5 +147,7 @@ if __name__ == "__main__":
     #  DONE
     ###### 
     result = optimizer.optimize(landmark_graphs, estiandinitvec.transform([target]))
+    print(f" Target:")
     so.gprint(target)
     dumpfile(result, args.out)
+    sys.exit(int(result[0]))
