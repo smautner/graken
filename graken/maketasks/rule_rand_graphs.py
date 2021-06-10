@@ -13,20 +13,25 @@ def rule_rand_graphs(input_set, numgr =100, iter= 1, bottleneck = 500):
     #grammar.structout()
     cleaner = vector.Vectorizer()
     
+    ####
+    # graph filtering 
+    #####
     sss = {} # permanent banlist for graphs
+    def filtergraphs(graphs, low, up ):
+        graphs = cleaner.duplicate_rm(graphs,sss)
+        graphs = [g for g in graphs if low <= len(g) <= up]
+        return graphs
+
     for i in range(iter):
-        input_set = cleaner.duplicate_rm(input_set,sss)
+        input_set = filtergraphs(input_set, low = 8, up = 12)
         random.shuffle(input_set)
         input_set= input_set[:bottleneck]
         input_set = [g for start in input_set for g  in grammar.neighbors(start)]
     # also needs duplicate removal
     
-    input_set = cleaner.duplicate_rm(input_set,sss)
+    input_set = filtergraphs(input_set, low = 10, up = 10)
     random.shuffle(input_set)
     return input_set[:numgr], grammar
-
-
-
 
 
 

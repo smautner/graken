@@ -6,19 +6,19 @@ import structout as so
 
 docStartgraphs='''
 # start graphs
---nocycles 
---ngraphs int default:30
---graphsize int default:8
---node_labels int default:4
---edge_labels int default:2
---labeldistribution str default:uniform
---maxdeg int default:3
+--nocycles bool False
+--ngraphs int 30
+--graphsize int 8
+--node_labels int 4
+--edge_labels int 2
+--labeldistribution str uniform
+--maxdeg int 3
 '''
 
 docIter='''
---numgr int default:501
---iter int default:3
---out str default:nugraphs
+--numgr int 510
+--iter int 3
+--out str nugraphs
 '''
 
 
