@@ -31,15 +31,16 @@ end
 
 
 
-set paraargs  -j 32 --bar  --joblog lol.txt -j 32 --bar python main.py   
-set static --n_train 500 --n_iter 10 --cipselector graph --cipselector_k 10  --removedups True --filter_min_cip 2 --keepgraphs 50
-
-set prog --shuffle 13 --i tasks/task_{2} --out res/{1}_{2} --pareto {1}
+set paraargs  -j 32 --bar  --joblog lol.txt -j 32 --bar python main.py 
+set static1 --n_train 500 --n_iter 10 --cipselector graph --cipselector_k 10  --removedups True --filter_min_cip 2 --keepgraphs 30
+set static2 --size_limiter 'lambda x:int\(x.mean\(\)\)+6' # i should use theese: " 
+set prog --shuffle 13 --i tasks84/task_{2} --out res/{1}_{2} --pareto {1}
 set pareto greedy #geometric paretogreed greedy pareto_only default
 set argvalues ::: $pareto ::: (seq 0 31)  
 
 rm res/*
-parallel $paraargs $static $prog $argvalues
+parallel $paraargs $static1 $static2 $prog $argvalues
 
 showres
+
 

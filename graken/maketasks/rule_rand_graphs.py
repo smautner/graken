@@ -12,7 +12,7 @@ def rule_rand_graphs(input_set, numgr =100, iter= 1, bottleneck = 500):
     grammar.fit(input_set)
     #grammar.structout()
     cleaner = vector.Vectorizer()
-    
+    startgraphs = input_set
     ####
     # graph filtering 
     #####
@@ -23,14 +23,15 @@ def rule_rand_graphs(input_set, numgr =100, iter= 1, bottleneck = 500):
         return graphs
 
     for i in range(iter):
-        input_set = filtergraphs(input_set, low = 8, up = 12)
+        input_set = filtergraphs(input_set, low = 6, up = 10)
         random.shuffle(input_set)
         input_set= input_set[:bottleneck]
         input_set = [g for start in input_set for g  in grammar.neighbors(start)]
     # also needs duplicate removal
     
-    input_set = filtergraphs(input_set, low = 10, up = 10)
+    input_set = filtergraphs(input_set, low = 8, up = 8)
     random.shuffle(input_set)
+    input_set+=startgraphs
     return input_set[:numgr], grammar
 
 

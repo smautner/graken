@@ -28,7 +28,7 @@ doc='''
 --i str tasks/task_0
 --n_train int -1
 --taskid int 0
---shuffle int 0     -> random seed for shuffling
+--shuffle int -1     -> random seed for shuffling
 
 # INIT
 --v_radius int 2  
@@ -63,8 +63,9 @@ if __name__ == "__main__":
     logging.debug(args.__dict__)
 
     graphs = loadfile(args.i)
-    random.seed(args.shuffle)
-    random.shuffle(graphs)
+    if args.shuffle != -1:
+        random.seed(args.shuffle)
+        random.shuffle(graphs)
 
     domain = graphs[:args.n_train]
     target = graphs[-(args.taskid+1)]
@@ -105,7 +106,6 @@ if __name__ == "__main__":
                                    nodelevel_radius_and_thickness=True)
         mygrammar.fit(ranked_graphs,landmark_graphs, vectorizer.transform([target]))
     else: 
-        print(f" USING EXPERIMENTAL GRMAMAR I SHOULD UNDO THIS :) ")
         mygrammar = grammar.sizecutgrammar(args.size_limiter, 
                                     radii=list(range(args.maxcoresize+1)),
                                    thickness=args.contextsize,
