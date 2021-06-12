@@ -34,13 +34,15 @@ end
 set paraargs  -j 32 --bar  --joblog lol.txt -j 32 --bar python main.py 
 set static1 --n_train 500 --n_iter 10 --cipselector graph --cipselector_k 10  --removedups True --filter_min_cip 2 --keepgraphs 30
 set static2 --size_limiter 'lambda x:int\(x.mean\(\)\)+6' # i should use theese: " 
-set prog --shuffle 13 --i tasks84/task_{2} --out res/{1}_{2} --pareto {1}
-set pareto greedy #geometric paretogreed greedy pareto_only default
-set argvalues ::: $pareto ::: (seq 0 31)  
+set prog --shuffle -1 --i tasks8{1}/task_{2} --out res/{1}_{2} --pareto greedy
+set argvalues ::: (seq 2 4) ::: (seq 0 31) 
 
 rm res/*
 parallel $paraargs $static1 $static2 $prog $argvalues
-
 showres
+
+
+# alternative to show res is to grep the results from the logfile
+grep tasks82 lol.txt | awk '{total+=$7} END {print(f"  total}'")
 
 
