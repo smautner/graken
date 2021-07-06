@@ -10,7 +10,6 @@ jloadfile = lambda filename:  json.loads(open(filename,'r').read())
 
 import logging, sys
 logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
-
 import random
 import time
 from graken.ml import cost_estimator, cost_estimator_ego_real as CEER
@@ -29,6 +28,7 @@ doc='''
 --n_train int -1
 --taskid int 0
 --shuffle int -1     -> random seed for shuffling
+--specialset bool False
 
 # INIT
 --v_radius int 2  
@@ -63,14 +63,27 @@ if __name__ == "__main__":
     logging.debug(args.__dict__)
 
     graphs = loadfile(args.i)
-    if args.shuffle != -1:
-        random.seed(args.shuffle)
-        random.shuffle(graphs)
 
-    domain = graphs[:args.n_train]
-    target = graphs[-(args.taskid+1)]
+    if args.specialset:
+        graphs, origs = graphs[:-30], graphs[-30:]        
+        if args.shuffle != -1:
+            random.seed(args.shuffle)
+            random.shuffle(graphs)
+            random.shuffle(origs)
+        domain = graphs[:args.n_train]
+        target = origs[args.taskid]
+    else:
+        if args.shuffle != -1:
+            random.seed(args.shuffle)
+            random.shuffle(graphs)
 
-    assert (args.n_train+args.taskid) < len(graphs) , f"{args.n_train} {args.taskid} {len(graphs)}"
+        domain = graphs[:args.n_train]
+        target = graphs[-(args.taskid+1)]
+
+        if args.n_train + args.taskid < len(graphs):  # TODO remove this :) 
+            args.n_train = len(graphs) - 30
+
+        assert (args.n_train+args.taskid) < len(graphs) , f"{args.n_train} {args.taskid} {len(graphs)}"
     logging.debug(f"loading done")
 
 
@@ -135,6 +148,7 @@ if __name__ == "__main__":
     ##############
     optimizer = pareto.LocalLandmarksDistanceOptimizer(
                 n_iter=args.n_iter,
+                targetgraph = target if args.specialset else False, 
                 keepgraphs=args.keepgraphs,
                 filter = args.pareto,
                 estimator = multiopesti,

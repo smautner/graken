@@ -81,7 +81,7 @@ class gradigrammar(lsgg):
         '''
             stuff is a list:[startgraph,startgraph_vec, cip_con, cip_congru]
             return: selctor_k best productions in the list
-        '''
+      '''
         # score productions:
         #from graken.main import dumpfile
 

@@ -1,11 +1,13 @@
 import logging
+from lmz import * 
+import basics as ba
 import time
 import random
 import numpy as np
 import structout as so
 from sklearn.metrics.pairwise import euclidean_distances
 from graken.pareto import pareto_funcs
-
+from graken.pareto import editdistance
 def calc_average(l):
     """
     Small function to mitigate possibility
@@ -26,8 +28,9 @@ class LocalLandmarksDistanceOptimizer(object):
             vectorizer = None,
             greedyvec = None,
             remove_duplicates = True,
+            targetgraph = None, 
             grammar = None):
-            
+        self.targetgraph = targetgraph 
         self.grammar = grammar
         self.estimator = estimator
         self.paretofilter=filter
@@ -112,9 +115,22 @@ class LocalLandmarksDistanceOptimizer(object):
             graphs, done = z
     
         logging.log(10, f"cost_filter: got {in_count} graphs (pareto:{frontsize}), reduced to {len(graphs)} (%.2fs)"%(time.time()-timenow))
+        
+        self.check_true_distance(graphs)
 
         # print
         return graphs, done
+    
+
+    def check_true_distance(self, graphs):
+        if self.targetgraph: 
+            now = time.time()
+            dists = ba.mpmap(editdistance.dist, [(g,self.targetgraph) for g in graphs],poolsize = 30)
+
+            z = np.argsort(dists)
+            dists.sort()
+            logging.debug( f'TRUE DISTS: { dists[:5] }  ({time.time()- now}s)' )
+            so.gprint([graphs[i] for i in z[:5]])
 
     def _default_selector(self, graphs):
         costs = self.estimator.decision_function(graphs)
