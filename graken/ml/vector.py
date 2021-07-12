@@ -26,7 +26,8 @@ class Vectorizer():
                 rv.get_subgraphs_from_graph_component, self.decompose, rv.convert),
                         bitmask= 2**16-1)
         data_matrix = rv._to_sparse_matrix(encoding, node_ids, 2**16+1)
-        return data_matrix.sum(axis=0)
+        r = data_matrix.sum(axis=0)
+        return r 
 
     def transform(self,graphs):
         # should i use this instead? from ego.vectorize import vectorize

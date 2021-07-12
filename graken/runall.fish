@@ -5,15 +5,16 @@ set -x 'OPENBLAS_NUM_THREADS' 1
 
 
 function showres
-python -c 'import main as m
+python -c "ARGS='$argv';"'import main as m
 from collections import Counter
 from lmz import *
 import structout as so
 import os
+import sys
 
 DIR = "res"
-
-f = map(lambda x: m.loadfile(f"{DIR}/{x}"), os.listdir(DIR))
+#f = map(lambda x: m.loadfile(f"{DIR}/{x}"), sys.argv[1:]) 
+f = Map(lambda x: m.loadfile(x), ARGS.split()) 
 res, dur, time =  Transpose(f)
 succ = sum(res)
 rtime = sum(time)
@@ -26,21 +27,24 @@ if sucstep:
     print (f"sucstep: median:{sucstep[len(sucstep)//2]}  max:{max(sucstep)}")
     #so.dprint( Counter(sucstep),length = max(sucstep))
 '
+
 end 
 
 
 
 
-set paraargs  -j 32 --bar  --joblog log.txt -j 32 --bar python main.py  --specialset True
-set static1 --n_train 500 --n_iter 10 --cipselector graph --cipselector_k 10  --removedups True --filter_min_cip 2 --keepgraphs 30
-set static2 --size_limiter 'lambda x:int\(x.mean\(\)\)+6' # i should use theese: " 
-set prog --shuffle -1 --i tasks8{1}/task_{2} --out res/{1}_{2} --pareto default
-set argvalues ::: (seq 3 3) ::: (seq 0 31) 
+set paraargs  -j 32 --bar  --joblog log.txt   python main.py  --specialset True
+set static1 --n_train 500 --n_iter 10 --cipselector cip --cipselector_k 1  --removedups True --filter_min_cip 2 --keepgraphs 30
+set static2 --size_limiter 'lambda x:int\(x.mean\(\)\*1.4+.5\)' # i should use theese: " 
+set prog --shuffle -1 --i tasks8{2}/task_{1} --out res/{2}_{1} --pareto greedy  --contextsize 1
+
+set argvalues  :::  (seq 0 99) ::: 4 5 
 
 rm res/*
 parallel $paraargs $static1 $static2 $prog $argvalues
-showres
 
+#for x in (seq 1 5); set c (find . -name {$x}_\*); showres $c end
+showres (find res -type f)
 
 # alternative to show res is to grep the results from the logfile
 #grep tasks82 lol.txt | awk '{total+=$7} END {print total}'

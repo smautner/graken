@@ -34,7 +34,7 @@ doc='''
 --v_radius int 2  
 --v_distance int 1  
 --v_normalize bool True
---n_landmarks int 10
+--n_landmarks int 30    # setting it equal to keepgraps to the first round is about as fast as the others
 --n_neighbors int 100
 
 # GRAMMAR
@@ -108,7 +108,8 @@ if __name__ == "__main__":
     
     # fit grammar
     t = time.time()
-    if False:
+    usegrammar = "eden"
+    if usegrammar == 'gradi':
         mygrammar = grammar.gradigrammar(radii=list(range(args.maxcoresize+1)),
                                    thickness=args.contextsize,
                                    graphsizelimiter= args.size_limiter,
@@ -117,7 +118,18 @@ if __name__ == "__main__":
                                     selektor_k= args.cipselector_k,
                                    filter_min_cip= args.filter_min_cip,
                                    nodelevel_radius_and_thickness=True)
-        mygrammar.fit(ranked_graphs,landmark_graphs, vectorizer.transform([target]))
+        mygrammar.fit(ranked_graphs,landmark_graphs, vectorizer.transform([target]))    
+
+    elif usegrammar == 'eden':
+        mygrammar = grammar.edengrammar(radii=list(range(args.maxcoresize+1)),
+                                   thickness=args.contextsize,
+                                   graphsizelimiter= args.size_limiter,
+                                   vectorizer=vectorizer,
+                                   selector=args.cipselector,
+                                    selektor_k= args.cipselector_k,
+                                   filter_min_cip= args.filter_min_cip,
+                                   nodelevel_radius_and_thickness=True)
+        mygrammar.fit(ranked_graphs,landmark_graphs, mygrammar.vectorize(target))
     else: 
         mygrammar = grammar.sizecutgrammar(args.size_limiter, 
                                     radii=list(range(args.maxcoresize+1)),

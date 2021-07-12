@@ -116,7 +116,7 @@ class LocalLandmarksDistanceOptimizer(object):
     
         logging.log(10, f"cost_filter: got {in_count} graphs (pareto:{frontsize}), reduced to {len(graphs)} (%.2fs)"%(time.time()-timenow))
         
-        self.check_true_distance(graphs)
+        # self.check_true_distance(graphs)
 
         # print
         return graphs, done
