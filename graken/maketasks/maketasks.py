@@ -19,19 +19,21 @@ docIter='''
 --numgr int 510
 --iter int 3
 --out str nugraphs
+--graphsize int 8
+--bottleneck int 100
 '''
 
 
 if __name__=="__main__":
     args = opts.parse(docStartgraphs)
     startgraphs = rg.make_graphs_static(**args.__dict__)
-    so.gprint(startgraphs[:4])
+    so.gprint(startgraphs[:3])
 
     args=opts.parse(docIter)
     out  = args.__dict__.pop('out')
     graphs,_ = rrg.rule_rand_graphs(startgraphs, **args.__dict__)
 
-    so.gprint(graphs[:4])
+    so.gprint(graphs[:3])
     dumpfile(graphs, out)
 
 

@@ -4,14 +4,13 @@ import logging
 import time
 
 
-def initialize(n_landmarks=10, n_neighbors=100, vectorizer=None, graphs=None, target=None):
+def initialize(n_landmarks=10, n_neighbors=100, vectorizer=None, graphs=None, target=None, target_vec = None):
         t= time.time() 
-        assert n_neighbors < len(graphs)
+        assert n_neighbors < len(graphs), f"neigh{n_neighbors}, gr: {len(graphs)}"
 
         vecs = vectorizer.transform(graphs)
         nn = neigh(n_neighbors=n_neighbors,metric='cosine').fit(vecs)
 
-        target_vec = vectorizer.transform([target])
         distances, neighbors = nn.kneighbors(target_vec, return_distance=True)
         
         distances = distances[0]

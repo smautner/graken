@@ -3,12 +3,10 @@ import graphlearn.util.util as u
 import graphlearn.local_substitution_graph_grammar as lsgg
 from graken.ml import vector
 
-def rule_rand_graphs(input_set, numgr =100, iter= 1, bottleneck = 500):
+def rule_rand_graphs(input_set, numgr =100, iter= 1, bottleneck = 500, graphsize= 12):
     # make grammar, fit on input
     grammar = lsgg.LocalSubstitutionGraphGrammar(radii=[1,2], thickness=1,
-                 filter_min_cip=1, filter_min_interface=2, nodelevel_radius_and_thickness=True)#,
-                 #cip_root_all = False,
-                 #half_step_distance= False )
+                 filter_min_cip=1, filter_min_interface=2, nodelevel_radius_and_thickness=True)
     grammar.fit(input_set)
     #grammar.structout()
     cleaner = vector.Vectorizer()
@@ -23,13 +21,16 @@ def rule_rand_graphs(input_set, numgr =100, iter= 1, bottleneck = 500):
         return graphs
 
     for i in range(iter):
-        input_set = filtergraphs(input_set, low = 6, up = 10)
+        input_set = filtergraphs(input_set, low = graphsize  -4, up = graphsize +4)
         random.shuffle(input_set)
         input_set= input_set[:bottleneck]
         input_set = [g for start in input_set for g  in grammar.neighbors(start)]
+        print(f"graphs generated after iter{i}:{len(input_set)}")
     # also needs duplicate removal
     
-    input_set = filtergraphs(input_set, low = 8, up = 8)
+    input_set = filtergraphs(input_set, low = graphsize, up = graphsize)
+
+    print(f"graphs after lastsizefilter:{len(input_set)}")
     random.shuffle(input_set)
     input_set+=startgraphs
     return input_set[:numgr], grammar
@@ -60,7 +61,5 @@ def test_rulerand():
     #print("grammar1 - grammar2")
     #diff = setop.difference(grammar1,grammar2)
     #u.draw_grammar_term(diff)
-
-
     #u.draw_grammar_term(unique2)  # !!!!!!!!!!!!!!!!!!!!!!!!!
     #print ("generated %d graphs" % len(res1))

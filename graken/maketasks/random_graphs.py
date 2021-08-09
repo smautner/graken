@@ -81,7 +81,8 @@ def nodedis_3deg():
     return int(np.random.triangular(5,5,13)+.5)
 
 def edgedis_3deg(n):
-    return int(np.random.triangular(n-1,n-1,n+3)+.5)
+    return int(np.random.triangular(n-1,n-1,n*1.4)+.5)
+    #return int(np.random.triangular(n-2,n*1.15,n*1.3)+.5)
 
 
 

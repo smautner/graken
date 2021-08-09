@@ -63,6 +63,7 @@ class gradigrammar(lsgg):
             self.get_productions(proddict, graph, i)
 
         sumprod = sum([len(x) for x in proddict.values()])
+        self.predscores = []
         productions = list(concat(map(self.selectbest, proddict.values())))
         logging.debug(f"expand neighbors: {sumprod} productions reduced to {len(productions)}  ({time.time() - timestart:.3}s )")
 
@@ -97,21 +98,23 @@ class gradigrammar(lsgg):
         '''
             stuff is a list:[startgraph,startgraph_vec, cip_con, cip_congru]
             return: selctor_k best productions in the list
-      '''
+        '''
         # score productions:
         #from graken.main import dumpfile
-
-
         #myvectors = np.empty((len(stuff),stuff[0][1].shape[1]))
         #for i,(gra,vec,cur,con) in enumerate(stuff):
         #    myvectors[i] = vec  - cur.core_vec + con.core_vec
         myvectors = [vec - cur.core_vec + con.core_vec for gra,vec,cur,con in stuff]
+        #myvectors = [vec + ( con.core_vec - cur.core_vec  ) for gra,vec,cur,con in stuff]
         myvectors = vstack(myvectors)
         myvectors = self.vectorizer.normalize(myvectors)
+        #print("lenv:", len(myvectors.indices))
         #scores = np.dot(myvectors, self.target)
-        scores =myvectors.dot(self.target)
-        goodindex = np.argsort(scores.T)
+        scores =myvectors.dot(self.target).todense().A1
+        goodindex = np.argsort(scores)
+        #print("gind", goodindex)
         goodindex = goodindex[-self.selelector_k:] 
+        self.predscores+=[scores[i] for i in goodindex]
         return [ (stuff[i][0],stuff[i][2], stuff[i][3]) for i in goodindex]
 
 
@@ -122,15 +125,15 @@ class edengrammar(gradigrammar):
         return dok_matrix(node_vectors[core_ids,:].sum(axis=0))
 
     def vertex_vectorizer(self,exgraph): 
-        return  eg.vertex_vectorize([exgraph], d = 0, r=0, normalization = False, inner_normalization= False)[0]
+        return  eg.vertex_vectorize([exgraph], d = self.eden_d, r=self.eden_r, normalization = False,nbits= 16,inner_normalization= False)[0]
 
     def vectorize(self,graph):
-        return eg.vectorize([graph], d = 0, r=0, normalization = False, inner_normalization= False)[0]
+        return eg.vectorize([graph], d = self.eden_d, r=self.eden_r, normalization = False,nbits=16,inner_normalization= False)[0]
 
 
 from graphlearn import local_substitution_graph_grammar as grammarcore
 
-class sizecutgrammar(grammarcore.LocalSubstitutionGraphGrammarCore):
+class sizecutgrammar(grammarcore.LocalSubstitutionGraphGrammar):
 
     def __init__(self,graphsizelimiter, **kwargs):
         super(sizecutgrammar,self).__init__(**kwargs)

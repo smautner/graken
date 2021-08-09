@@ -8,6 +8,19 @@ import structout as so
 from sklearn.metrics.pairwise import euclidean_distances
 from graken.pareto import pareto_funcs
 from graken.pareto import editdistance
+from scipy import sparse
+
+
+
+import dirtyopts as opts 
+doc = '--drawerror bool False'
+moduleargs = opts.parse(doc)
+if moduleargs.drawerror:
+    import matplotlib
+    matplotlib.use('module://matplotlib-sixel')
+    import matplotlib.pyplot as plt
+        
+
 def calc_average(l):
     """
     Small function to mitigate possibility
@@ -26,7 +39,6 @@ class LocalLandmarksDistanceOptimizer(object):
             filter = 'default',
             estimator = None,
             vectorizer = None,
-            greedyvec = None,
             remove_duplicates = True,
             targetgraph = None, 
             grammar = None):
@@ -37,7 +49,6 @@ class LocalLandmarksDistanceOptimizer(object):
         self.keepgraphs = keepgraphs
         self.n_iter = n_iter
         self.vectorizer = vectorizer
-        self.greedyvectorizer = greedyvec
         self.rmdup = remove_duplicates
         
         self.seen_graphs = {}
@@ -62,6 +73,8 @@ class LocalLandmarksDistanceOptimizer(object):
                 break
 
             graphs = self.grammar.expand_neighbors(graphs)
+            if moduleargs.drawerror:
+                self.plotpredictedscores(graphs) # TODO REMOVE :) 
             if self.rmdup:
                 graphs = self.duplicate_rm(graphs)
 
@@ -83,7 +96,8 @@ class LocalLandmarksDistanceOptimizer(object):
         in_count = len(graphs)
         frontsize=''
         if self.paretofilter in ['greedy', 'random'] or len(graphs) < self.keepgraphs:
-            distances = euclidean_distances(self.target, self.greedyvectorizer.transform(graphs))
+            vectors = self.vectorizer.transform(graphs)
+            distances = euclidean_distances(self.target, vectors)
             done = distances.min() < 0.0001
             if self.paretofilter == 'greedy':
                 ranked_distances = np.argsort(distances)[0]
@@ -121,6 +135,8 @@ class LocalLandmarksDistanceOptimizer(object):
         # print
         return graphs, done
     
+
+
 
     def check_true_distance(self, graphs):
         if self.targetgraph: 
@@ -173,4 +189,38 @@ class LocalLandmarksDistanceOptimizer(object):
     #################
     def duplicate_rm(self, graphs):
         return self.vectorizer.duplicate_rm(graphs, self.seen_graphs) 
+
+    def plotpredictedscores(self, graphs):
+        if 'predscores' in self.grammar.__dict__:
+
+            # real scores 
+            vectors = self.vectorizer.transform(graphs)
+            realscores = vectors.dot(self.target.T).todense().A1
+            grammarscores= np.array(self.grammar.predscores)
+
+
+            sig = np.std(realscores)
+            print(f"{len(grammarscores)}  {len(realscores)}")
+            zerror  = [ abs(a-b)/sig for a,b in zip(grammarscores,realscores)]
+
+            print("average z-error:", np.mean(zerror))
+            #print(list(realscores))
+            #print(list(grammarscores))
+            # asd = Zip(realscores, grammarscores)
+            # asd.sort()
+            # r,g = Transpose(asd)
+            # plt.plot(r)
+            # plt.plot(g)
+            plt.scatter(realscores, grammarscores)
+            plt.plot([0,1],[0,1], ':', c='gray', alpha=.4)
+            plt.axis('square')
+            plt.grid()
+            c = np.corrcoef(grammarscores , realscores)[0,1]
+            plt.title(f"pearson corr {c:.3}")
+            plt.show()
+            plt.close()
+        else:
+            print("there is no predscore in the grammar")
+
+
 

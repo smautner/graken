@@ -44,6 +44,9 @@ doc='''
 --cipselector str cip assert pop graph cip           
 --cipselector_k int 1
 --size_limiter eval lambda x: int(sum(x)/len(x))+(int(x.std()))
+--eden_d int 1  # eden r+d are only used when i activate the eden grammar...
+--eden_r int 1
+--grammarname str eden 
 
 # OPTIMIZER 
 --removedups bool False
@@ -59,17 +62,20 @@ if __name__ == "__main__":
     ###################
     # 1. LOAD
     ###################
+    starttime = time.time()
     args = opts.parse(doc)
     logging.debug(args.__dict__)
 
     graphs = loadfile(args.i)
-
+    print(f"########## THERE ARE {len(graphs)} graphs in the file ##########")
     if args.specialset:
-        graphs, origs = graphs[:-30], graphs[-30:]        
+        graphs, origs = graphs[:-200], graphs[-200:]        
         if args.shuffle != -1:
             random.seed(args.shuffle)
             random.shuffle(graphs)
             random.shuffle(origs)
+
+        assert args.n_train <= len(graphs)
         domain = graphs[:args.n_train]
         target = origs[args.taskid]
     else:
@@ -77,13 +83,21 @@ if __name__ == "__main__":
             random.seed(args.shuffle)
             random.shuffle(graphs)
 
+        if args.n_train < 0: 
+            args.n_train  = len(graphs) + args.n_train 
+
         domain = graphs[:args.n_train]
         target = graphs[-(args.taskid+1)]
+
+
+
 
         if args.n_train + args.taskid < len(graphs):  # TODO remove this :) 
             args.n_train = len(graphs) - 30
 
         assert (args.n_train+args.taskid) < len(graphs) , f"{args.n_train} {args.taskid} {len(graphs)}"
+
+
     logging.debug(f"loading done")
 
 
@@ -92,15 +106,17 @@ if __name__ == "__main__":
     ##################
     # build a vectorizer for everything
     vectorizer = vector.Vectorizer(args.v_radius, args.v_distance, args.v_normalize)
-    estiandinitvec = eg.Vectorizer(r=3, d=3)
+    target_vector = vectorizer.transform([target])
+
 
     # find neighbors/landmarks
     landmark_graphs, desired_distances, ranked_graphs = neighbors.initialize(
                                                             n_landmarks=args.n_landmarks, 
                                                             n_neighbors=args.n_neighbors, 
-                                                            vectorizer=estiandinitvec,
+                                                            vectorizer=vectorizer,
                                                             graphs=domain,
-                                                            target=target)
+                                                            target=target,
+                                                            target_vec = target_vector)
 
 
 
@@ -108,8 +124,7 @@ if __name__ == "__main__":
     
     # fit grammar
     t = time.time()
-    usegrammar = "eden"
-    if usegrammar == 'gradi':
+    if args.grammarname == 'gradi':
         mygrammar = grammar.gradigrammar(radii=list(range(args.maxcoresize+1)),
                                    thickness=args.contextsize,
                                    graphsizelimiter= args.size_limiter,
@@ -118,9 +133,9 @@ if __name__ == "__main__":
                                     selektor_k= args.cipselector_k,
                                    filter_min_cip= args.filter_min_cip,
                                    nodelevel_radius_and_thickness=True)
-        mygrammar.fit(ranked_graphs,landmark_graphs, vectorizer.transform([target]))    
+        mygrammar.fit(ranked_graphs,landmark_graphs,target_vector)    
 
-    elif usegrammar == 'eden':
+    elif args.grammarname == 'eden':
         mygrammar = grammar.edengrammar(radii=list(range(args.maxcoresize+1)),
                                    thickness=args.contextsize,
                                    graphsizelimiter= args.size_limiter,
@@ -129,7 +144,9 @@ if __name__ == "__main__":
                                     selektor_k= args.cipselector_k,
                                    filter_min_cip= args.filter_min_cip,
                                    nodelevel_radius_and_thickness=True)
-        mygrammar.fit(ranked_graphs,landmark_graphs, mygrammar.vectorize(target))
+        mygrammar.eden_d = args.eden_d
+        mygrammar.eden_r = args.eden_r
+        mygrammar.fit(ranked_graphs,landmark_graphs, target_vector)
     else: 
         mygrammar = grammar.sizecutgrammar(args.size_limiter, 
                                     radii=list(range(args.maxcoresize+1)),
@@ -138,7 +155,6 @@ if __name__ == "__main__":
                                    nodelevel_radius_and_thickness=True)
         mygrammar.fit(ranked_graphs,landmark_graphs)
     logging.debug(f"fit grammar done {time.time()-t:.2}s")
-
 
 
     # build estimator
@@ -165,15 +181,14 @@ if __name__ == "__main__":
                 filter = args.pareto,
                 estimator = multiopesti,
                 vectorizer = vectorizer,
-                greedyvec = estiandinitvec,
                 remove_duplicates = args.removedups,
                 grammar = mygrammar )
 
     ######
     #  DONE
     ###### 
-    result = optimizer.optimize(landmark_graphs, estiandinitvec.transform([target]))
+    result = optimizer.optimize(landmark_graphs, target_vector )
     print(f" Target:")
     so.gprint(target)
-    dumpfile(result, args.out)
+    dumpfile(list(result)+[time.time() - starttime,mygrammar.size()[-1]], args.out)
     sys.exit(int(result[0]))

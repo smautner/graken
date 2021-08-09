@@ -1,8 +1,6 @@
 from lmz import *
 import time
-
 from ego import real_vectorize as rv
-
 from ego.decomposition.paired_neighborhoods import decompose_paired_neighborhoods
 from sklearn.preprocessing import normalize as sknormalize
 import numpy as np
@@ -13,25 +11,30 @@ from eden.graph import Vectorizer as edenvec
 
 class Vectorizer():
 
-    def __init__(self, radius=3, distance=3, normalize=True):
+    def __init__(self, radius=3, distance=3, normalize=True, eden = True):
         self.decompose = lambda gr: decompose_paired_neighborhoods(gr, max_radius=radius, max_distance=distance)
+        self.edenvec = edenvec(r=radius,d=distance, normalization = False, inner_normalization= False)
         self.norm = normalize
-
-
         self.hasher = edenvec(r=2,d=1, normalization = False, inner_normalization= False)
+        self.eden=eden
+
+    
+
 
     def vectorize(self, graph):
         #  vextorize dioes as grammar does and then sum axis 0 
-        encoding, node_ids = rv.node_encode_graph(graph, rv.tz.compose(
-                rv.get_subgraphs_from_graph_component, self.decompose, rv.convert),
-                        bitmask= 2**16-1)
-        data_matrix = rv._to_sparse_matrix(encoding, node_ids, 2**16+1)
-        r = data_matrix.sum(axis=0)
-        return r 
+        if not self.eden:
+            encoding, node_ids = rv.node_encode_graph(graph, rv.tz.compose(
+                    rv.get_subgraphs_from_graph_component, self.decompose, rv.convert),
+                            bitmask= 2**16-1)
+            data_matrix = rv._to_sparse_matrix(encoding, node_ids, 2**16+1)
+            r = data_matrix.sum(axis=0)
+            return r 
+        return self.edenvec.transform([graph])[0] 
 
     def transform(self,graphs):
         # should i use this instead? from ego.vectorize import vectorize
-        r = np.vstack(Map(self.vectorize,graphs))
+        r = np.vstack(Map(self.vectorize,graphs)) if not self.eden else self.edenvec.transform(graphs)
         re = self.normalize(r)
         re = csr_matrix(re)
         return re
@@ -41,20 +44,15 @@ class Vectorizer():
             ndarr = sknormalize(ndarr, axis = 1 )
         return ndarr
 
-    def raw(self,graph):
-        # addition and subtraction of core-vectors need to happen in raw format
-        return  self.vectorize(graph)
 
-    
-
-
+   
 
     ##############
     # hashing 
     ##############
     def hashvec(self,graphs):
         csrs =  self.hasher.transform(graphs)
-        return Map(lambda row: hash(tuple(row.indices)), csrs)
+        return Map(lambda row: hash(tuple(row.indices)+tuple(row.data)), csrs)
 
     def duplicate_rm(self, graphs, seen_graphs):
         timenow = time.time()
