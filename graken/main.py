@@ -8,8 +8,16 @@ loadfile = lambda filename: dill.load(open(filename, "rb"))
 jloadfile = lambda filename:  json.loads(open(filename,'r').read())
 
 
-import logging, sys
-logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
+import logging
+#logging.basicConfig(stream=sys.stdout, level=logging.INFO) #...
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+ch = logging.StreamHandler(sys.stdout)
+ch.setLevel(logging.DEBUG)
+cformatter = logging.Formatter('%(message)s')
+ch.setFormatter(cformatter)
+logger.addHandler(ch)
+
 import random
 import time
 from graken.ml import cost_estimator, cost_estimator_ego_real as CEER
@@ -64,7 +72,7 @@ if __name__ == "__main__":
     ###################
     starttime = time.time()
     args = opts.parse(doc)
-    logging.debug(args.__dict__)
+    logger.debug(args.__dict__)
 
     graphs = loadfile(args.i)
     print(f"########## THERE ARE {len(graphs)} graphs in the file ##########")
@@ -79,26 +87,21 @@ if __name__ == "__main__":
         domain = graphs[:args.n_train]
         target = origs[args.taskid]
     else:
+        '''
+            assert length
+            just take the task id
+            shuffle
+            discard trash
+        '''
+        assert len(graphs)> args.n_train+1, "too few graphs"
+        target = graphs.pop(args.taskid)
         if args.shuffle != -1:
             random.seed(args.shuffle)
             random.shuffle(graphs)
-
-        if args.n_train < 0:
-            args.n_train  = len(graphs) + args.n_train
-
         domain = graphs[:args.n_train]
-        target = graphs[-(args.taskid+1)]
 
 
-
-
-        if args.n_train + args.taskid < len(graphs):  # TODO remove this :)
-            args.n_train = len(graphs) - 30
-
-        assert (args.n_train+args.taskid) < len(graphs) , f"{args.n_train} {args.taskid} {len(graphs)}"
-
-
-    logging.debug(f"loading done")
+    logger.debug(f"loading done")
 
 
     #################
@@ -154,7 +157,7 @@ if __name__ == "__main__":
                                    filter_min_cip= args.filter_min_cip,
                                    nodelevel_radius_and_thickness=True)
         mygrammar.fit(ranked_graphs,landmark_graphs)
-    logging.debug(f"fit grammar done {time.time()-t:.2}s")
+    logger.debug(f"fit grammar done {time.time()-t:.2}s")
 
 
     # build estimator
@@ -168,7 +171,7 @@ if __name__ == "__main__":
         #multiopesti = cost_estimator.DistRankSizeCostEstimator(vectorizer=vectorizer)
         multiopesti = cost_estimator.DistRankSizeCostEstimator(vectorizer=estiandinitvec)
         multiopesti.fit(desired_distances, landmark_graphs, ranked_graphs)
-    logging.debug(f"fit multiopesti done {time.time()-t:.2}s")
+    logger.debug(f"fit multiopesti done {time.time()-t:.2}s")
 
 
     #############

@@ -10,6 +10,7 @@ from sklearn.metrics.pairwise import euclidean_distances
 from eden.util import describe
 from eden.util import timeit
 import logging
+logger=logging.getLogger(__name__)
 from scipy.stats import rankdata
 from scipy.sparse import csr_matrix
 
@@ -196,7 +197,7 @@ class RankBiasCostEstimator():
         #pos=csr_matrix(pos)
         #neg=csr_matrix(neg)
         x_ranks = sp.sparse.vstack(pos+neg)
-        logging.debug('fitting: %s' % describe(x_ranks))
+        logger.debug('fitting: %s' % describe(x_ranks))
         self.estimator = self.estimator.fit(x_ranks, y)
         return self
 
@@ -217,7 +218,7 @@ class RankBiasCostEstimator():
         pos = sp.sparse.vstack(pos)
         neg = sp.sparse.vstack(neg)
         x_ranks = sp.sparse.vstack([pos, neg])
-        logging.debug('fitting: %s' % describe(x_ranks))
+        logger.debug('fitting: %s' % describe(x_ranks))
         self.estimator = self.estimator.fit(x_ranks, y)
         return self
     '''

@@ -1,6 +1,7 @@
 import structout as so
 from sklearn.neighbors import NearestNeighbors as neigh
 import logging
+logger=logging.getLogger(__name__)
 import time
 
 
@@ -20,12 +21,12 @@ def initialize(n_landmarks=10, n_neighbors=100, vectorizer=None, graphs=None, ta
         landmark_graphs = ranked_graphs[:n_landmarks]
         desired_distances = distances[:n_landmarks]
 
-        logging.debug ("target(%d,%d) and nn(%d,%d)" % (target.number_of_nodes(),
+        logger.debug ("target(%d,%d) and nn(%d,%d)" % (target.number_of_nodes(),
                                                        target.number_of_edges(),
                                                        ranked_graphs[0].number_of_nodes(),
                                                        ranked_graphs[0].number_of_edges()))
 
         so.gprint([target, ranked_graphs[0]], edgelabel='label')
         
-        logging.debug(f"finding landmarks done {time.time()-t:.3}s")
+        logger.debug(f"finding landmarks done {time.time()-t:.3}s")
         return landmark_graphs, desired_distances, ranked_graphs

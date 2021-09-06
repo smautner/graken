@@ -3,6 +3,7 @@ from collections import defaultdict
 import numpy as np
 from scipy.sparse import csr_matrix, vstack, dok_matrix
 import logging
+logger=logging.getLogger(__name__)
 from toolz import concat
 from graphlearn.cipcorevector import LsggCoreVec as lsgg
 from graphlearn import lsgg_core_interface_pair as lsggcip
@@ -36,8 +37,8 @@ class gradigrammar(lsgg):
         super(gradigrammar, self).fit(graphs)
         self.genmaxsize = self.graphsizelimiter(np.array([len(g) + g.size() for g in landmarks]))
         self.target= target.T# target.toarray().T
-        logging.debug(f"grammar generation: %.2fs ({len(graphs)} graphs)" % (time.time() - timenow))
-        logging.debug(f"graphsizelimit: {self.genmaxsize}")
+        logger.debug(f"grammar generation: %.2fs ({len(graphs)} graphs)" % (time.time() - timenow))
+        logger.debug(f"graphsizelimit: {self.genmaxsize}")
         self.isfit=True
     
 
@@ -65,12 +66,12 @@ class gradigrammar(lsgg):
         sumprod = sum([len(x) for x in proddict.values()])
         self.predscores = []
         productions = list(concat(map(self.selectbest, proddict.values())))
-        logging.debug(f"expand neighbors: {sumprod} productions reduced to {len(productions)}  ({time.time() - timestart:.3}s )")
+        logger.debug(f"expand neighbors: {sumprod} productions reduced to {len(productions)}  ({time.time() - timestart:.3}s )")
 
         timemid = time.time()
         graphs = [ self._substitute_core(*prod) for prod in productions ]
         graphs = [ g for g in graphs if g ]
-        logging.debug(f"expand neighbors: generating graphs  ({time.time() - timemid:.3}s )")
+        logger.debug(f"expand neighbors: generating graphs  ({time.time() - timemid:.3}s )")
         return graphs
 
 
@@ -156,7 +157,7 @@ class sizecutgrammar(grammarcore.LocalSubstitutionGraphGrammar):
     def expand_neighbors(self, graphs):
         timemid = time.time()
         r =  [ n for graph in graphs for  n in self.neighbors(graph)]
-        logging.debug(f"expand neighbors: generating graphs  ({time.time() - timemid:.3}s )")
+        logger.debug(f"expand neighbors: generating graphs  ({time.time() - timemid:.3}s )")
         return r 
     def neighbors(self, graph):
         grsize = len(graph) + graph.size()

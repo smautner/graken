@@ -7,6 +7,7 @@ import numpy as np
 from scipy.sparse import csr_matrix
 
 import logging
+logger=logging.getLogger(__name__)
 from eden.graph import Vectorizer as edenvec
 
 class Vectorizer():
@@ -58,7 +59,7 @@ class Vectorizer():
         timenow = time.time()
         count = len(graphs)
         graphs = list(self._duplicate_rm(graphs,seen_graphs))
-        logging.debug("duplicate_rm: %d -> %d graphs (%.2fs)" % (count, len(graphs), time.time() - timenow))
+        logger.debug("duplicate_rm: %d -> %d graphs (%.2fs)" % (count, len(graphs), time.time() - timenow))
         return graphs
 
     def _duplicate_rm(self, graphs, seen_graphs):

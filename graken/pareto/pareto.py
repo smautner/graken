@@ -1,4 +1,5 @@
 import logging
+logger=logging.getLogger(__name__)
 from lmz import * 
 import basics as ba
 import time
@@ -62,7 +63,7 @@ class LocalLandmarksDistanceOptimizer(object):
         starttime = time.time()
         done = False
         for i in range(self.n_iter):
-            logging.debug("++++++++  START OPTIMIZATION STEP %d +++++++" % i)
+            logger.debug("++++++++  START OPTIMIZATION STEP %d +++++++" % i)
             '''
                 filter:calculate costs and check if we are done
                 expand
@@ -78,8 +79,8 @@ class LocalLandmarksDistanceOptimizer(object):
             if self.rmdup:
                 graphs = self.duplicate_rm(graphs)
 
-        logging.debug('\n'+so.graph.make_picture(random.sample(graphs,3), edgelabel='label', size=10))
-        logging.debug(f"success: {done}")
+        logger.debug('\n'+so.graph.make_picture(random.sample(graphs,3), edgelabel='label', size=10))
+        logger.debug(f"success: {done}")
         return done, i , time.time() - starttime
         
 
@@ -128,7 +129,7 @@ class LocalLandmarksDistanceOptimizer(object):
             z =  self.estimator.get_k_best(graphs, self.keepgraphs)
             graphs, done = z
     
-        logging.log(10, f"cost_filter: got {in_count} graphs (pareto:{frontsize}), reduced to {len(graphs)} (%.2fs)"%(time.time()-timenow))
+        logger.log(10, f"cost_filter: got {in_count} graphs (pareto:{frontsize}), reduced to {len(graphs)} (%.2fs)"%(time.time()-timenow))
         
         # self.check_true_distance(graphs)
 
@@ -145,7 +146,7 @@ class LocalLandmarksDistanceOptimizer(object):
 
             z = np.argsort(dists)
             dists.sort()
-            logging.debug( f'TRUE DISTS: { dists[:5] }  ({time.time()- now}s)' )
+            logger.debug( f'TRUE DISTS: { dists[:5] }  ({time.time()- now}s)' )
             so.gprint([graphs[i] for i in z[:5]])
 
     def _default_selector(self, graphs):
