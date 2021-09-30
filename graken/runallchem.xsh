@@ -14,6 +14,13 @@ set -x 'OMP_NUM_THREADS' 1
 set -x 'OPENBLAS_NUM_THREADS' 1
 '''
 
+
+
+# multiplicator = 1.25 is in reschem
+# r2chem contains results for size limiter 1.5.. there is no difference in performance ratio although both are slower
+
+outfolder = 'reschem'
+$outfolder = outfolder
 #args = {'aid': '119  1345082 624202  977611', 'grammar': 'eden nonlookahead', 'taskid' }
 
 paraargs  = " -j 32 --bar  --joblog chemlog.txt -j 32 --bar python main.py "
@@ -25,7 +32,7 @@ static1 = '''--n_train 2000 --n_iter 5 --cipselector graph --cipselector_k 10 --
 	--n_neighbors {4}
 	--grammarname {2} '''
 
-prog  = "--shuffle 4 --i chemtasks/{1} --taskid {3} --out reschem/{2}_{4}_{3}_{1} --pareto greedy "
+prog  = "--shuffle 4 --i chemtasks/{1} --taskid {3} --out "+outfolder+"/{2}_{4}_{3}_{1} --pareto greedy "
 
 
 toargs = lambda x : " ".join(map(str,x))
@@ -37,7 +44,7 @@ argvalues += " ::: " + toargs(range(50,1000,100))
 
 if False:
     # recalculate
-    rm reschem/*
+    rm $outfolder/*
     parallel @( (paraargs+static1+prog+argvalues).split()  )
     exit()
 
@@ -56,7 +63,7 @@ r1,r2 = [],[]
 # lookahead grammar
 for numneigh in numneighs:
     $num = numneigh
-    f = Map(lambda x: m.loadfile(x), `reschem/eden_$num.*`)
+    f = Map(lambda x: m.loadfile(x), `$outfolder/eden_$num.*`)
     res, steps, optitime , timetotal, productions =  Transpose(f)
     grammarsize.append( np.mean(productions)  )
     timeperstep.append( sum(optitime)/sum(steps)  )
@@ -66,7 +73,7 @@ for numneigh in numneighs:
 # expand all grammar
 for numneigh in numneighs:
     $num = numneigh
-    f = Map(lambda x: m.loadfile(x), `reschem/nonlookahead_$num.*`)
+    f = Map(lambda x: m.loadfile(x), `$outfolder/nonlookahead_$num.*`)
     res, steps, optitime , timetotal, productions =  Transpose(f)
     steptime_norm.append( sum(optitime)/sum(steps)  )
     r2.append( sum(res)/ len(res))
@@ -88,13 +95,19 @@ from scipy.optimize import curve_fit
 def f(x, a, b,c):
     return a* np.log(x+c) +b
 
+def rev(where, a,b,c):
+    #return (np.exp(where) - c*np.exp(a) - np.exp(b)) / np.exp(a)
+    return -np.exp(-b/a) * (c * np.exp(b/a) - np.exp(where/a))
 
 def plot12(x,y, xprojection):
     plt.plot(x, y )
     popt, pcov = curve_fit(f, x ,y)
+    print("ASDASD")
     print(f" {popt=}")
     X = np.linspace(0, xprojection, 100)
     plt.plot(X, Map(lambda x:f(x,*popt), X))
+
+    print(f"@10k {rev(10000, *popt)}")
     #plt.yscale("log")
 
 

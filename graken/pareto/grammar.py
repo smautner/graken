@@ -40,7 +40,7 @@ class gradigrammar(lsgg):
         logger.debug(f"grammar generation: %.2fs ({len(graphs)} graphs)" % (time.time() - timenow))
         logger.debug(f"graphsizelimit: {self.genmaxsize}")
         self.isfit=True
-    
+
 
     def _get_cores(self, graph):
         cores = super(gradigrammar,self)._get_cores(graph)
@@ -50,13 +50,13 @@ class gradigrammar(lsgg):
 
     def expand_neighbors(self, graphs):
         '''
-        the plan: 
+        the plan:
         - there are 3 cip selectors:
         - pop: [graph, cip_congr]
         - graph: [graph,cc][graph,cc]
         - cip: same as one but there is a list for each start-cip now
         once i have the lists i can select the select_k best ones
-        i guess i can just throw everything on a default dict with the key as something that ids the list  
+        i guess i can just throw everything on a default dict with the key as something that ids the list
         '''
         timestart = time.time()
         proddict = defaultdict(list)
@@ -82,9 +82,9 @@ class gradigrammar(lsgg):
         grlen = len(graph) + graph.size()
         vec = self.vectorize(graph)
         current_cips = self._get_cips(graph)
-    
+
         for current_cip in current_cips:
-            if productions := [(graph, vec, current_cip,concip) for concip in self._get_congruent_cips(current_cip) 
+            if productions := [(graph, vec, current_cip,concip) for concip in self._get_congruent_cips(current_cip)
                     if len(concip.core_nodes) + grlen - len(current_cip.core_nodes) <= self.genmaxsize]:
                 pdict[self.mkkey(grid, current_cip.interface_hash)]+= productions
 
@@ -111,21 +111,23 @@ class gradigrammar(lsgg):
         myvectors = self.vectorizer.normalize(myvectors)
         #print("lenv:", len(myvectors.indices))
         #scores = np.dot(myvectors, self.target)
-        scores =myvectors.dot(self.target).todense().A1
+        scores =myvectors.dot(self.target)
+        #scores = scores.todense().A1 # the datatype here changes randomly? wtf?
+        scores = scores.ravel()
         goodindex = np.argsort(scores)
         #print("gind", goodindex)
-        goodindex = goodindex[-self.selelector_k:] 
+        goodindex = goodindex[-self.selelector_k:]
         self.predscores+=[scores[i] for i in goodindex]
         return [ (stuff[i][0],stuff[i][2], stuff[i][3]) for i in goodindex]
 
 
 class edengrammar(gradigrammar):
-    def make_core_vector(self, core, graph, node_vectors): 
+    def make_core_vector(self, core, graph, node_vectors):
         c_set = set(core.nodes())
-        core_ids = [i for i,n in enumerate(graph.nodes()) if n in c_set and not graph.nodes[n].get('edge',False)  ] 
+        core_ids = [i for i,n in enumerate(graph.nodes()) if n in c_set and not graph.nodes[n].get('edge',False)  ]
         return dok_matrix(node_vectors[core_ids,:].sum(axis=0))
 
-    def vertex_vectorizer(self,exgraph): 
+    def vertex_vectorizer(self,exgraph):
         return  eg.vertex_vectorize([exgraph], d = self.eden_d, r=self.eden_r, normalization = False,nbits= 16,inner_normalization= False)[0]
 
     def vectorize(self,graph):
@@ -158,7 +160,7 @@ class sizecutgrammar(grammarcore.LocalSubstitutionGraphGrammar):
         timemid = time.time()
         r =  [ n for graph in graphs for  n in self.neighbors(graph)]
         logger.debug(f"expand neighbors: generating graphs  ({time.time() - timemid:.3}s )")
-        return r 
+        return r
     def neighbors(self, graph):
         grsize = len(graph) + graph.size()
         for cip in self._get_cips(graph):
