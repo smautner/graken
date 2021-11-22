@@ -19,19 +19,17 @@ class Vectorizer():
         self.hasher = edenvec(r=2,d=1, normalization = False, inner_normalization= False)
         self.eden=eden
 
-    
-
 
     def vectorize(self, graph):
-        #  vextorize dioes as grammar does and then sum axis 0 
+        #  vextorize dioes as grammar does and then sum axis 0
         if not self.eden:
             encoding, node_ids = rv.node_encode_graph(graph, rv.tz.compose(
                     rv.get_subgraphs_from_graph_component, self.decompose, rv.convert),
                             bitmask= 2**16-1)
             data_matrix = rv._to_sparse_matrix(encoding, node_ids, 2**16+1)
             r = data_matrix.sum(axis=0)
-            return r 
-        return self.edenvec.transform([graph])[0] 
+            return r
+        return self.edenvec.transform([graph])[0]
 
     def transform(self,graphs):
         # should i use this instead? from ego.vectorize import vectorize
@@ -46,10 +44,10 @@ class Vectorizer():
         return ndarr
 
 
-   
+
 
     ##############
-    # hashing 
+    # hashing
     ##############
     def hashvec(self,graphs):
         csrs =  self.hasher.transform(graphs)
@@ -95,7 +93,7 @@ class hashvec(object):
             return hash(tuple(k+v))
         hashed_features = [ hashor(fd) for fd in feature_dicts]
         return hashed_features
-    
+
     def vectorize_chunk_glhash(self,chunk):
         return [glcip.graph_hash(eden.graph._edge_to_vertex_transform(g),2**20-1,node_name_label=lambda id,node:hash(node['label'])) for g in chunk]
 

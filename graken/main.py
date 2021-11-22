@@ -191,7 +191,8 @@ if __name__ == "__main__":
     #  DONE
     ######
     result = optimizer.optimize(landmark_graphs, target_vector )
-    print(f" Target:")
-    so.gprint(target)
+    print(f"main.py: Target and best attempt:")
+    so.gprint([target, optimizer.best_graph[1]])
+    print(f"{result=}")
     dumpfile(list(result)+[time.time() - starttime,mygrammar.size()[-1]], args.out)
     sys.exit(int(result[0]))

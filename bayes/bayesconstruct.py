@@ -1,34 +1,31 @@
-
-
-
 from graken.ml import vector
 from graken.pareto import grammar, pareto
 
-def construct(target,graphs,graphsV, vectorizer,nn):
+def construct(target,graphs,graphsV, vectorizer,nn, n_iter = 10):
 
     n = nn.kneighbors(target)[1][0]
-    lando = [graphs[i] for i in n[:30]]
+    print(f"{n=} {len(graphs)=}")
+    lando = [graphs[i] for i in n[:10]]
     ranke = [graphs[i] for i in n]
 
-    grammarvec = vector.Vectorizer(radius = vectorizer.r, distance =vectorizer.d)
     mygrammar = grammar.edengrammar(radii = [0,1,2],
-                                    vectorizer = grammarvec,
+                                    vectorizer = vectorizer,
                                     thickness=1,
                                     graphsizelimiter= lambda x: x.mean()*1.25,
                                     selector = 1,
                                     selektor_k =10,
                                     nodelevel_radius_and_thickness=True)
-    mygrammar.eden_r  = vectorizer.r
-    mygrammar.eden_d  = vectorizer.d
+    mygrammar.eden_r  = vectorizer.edenvec.r
+    mygrammar.eden_d  = vectorizer.edenvec.d
     mygrammar.fit(ranke, lando,target)
 
     optimizer = pareto.LocalLandmarksDistanceOptimizer(
-                n_iter=5,
+                n_iter=n_iter,
                 targetgraph = target,
-                keepgraphs=30,
+                keepgraphs=15,
                 filter = 'greedy',
                 estimator = None,
-                vectorizer = grammarvec,
+                vectorizer = vectorizer,
                 remove_duplicates = True,
                 grammar = mygrammar )
     optimizer.optimize(lando,target)

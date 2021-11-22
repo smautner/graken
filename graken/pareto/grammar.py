@@ -112,8 +112,18 @@ class gradigrammar(lsgg):
         #print("lenv:", len(myvectors.indices))
         #scores = np.dot(myvectors, self.target)
         scores =myvectors.dot(self.target)
-        #scores = scores.todense().A1 # the datatype here changes randomly? wtf?
-        scores = scores.ravel()
+
+
+        # the datatype here changes randomly? wtf? TODO TODO
+        if type(scores) == np.ndarray:
+            scores = scores.ravel()
+        else:
+            scores  = scores.todenze().ravel()
+        # if not 'ravel' in scores.__dict__:
+        #     scores = scores.todense().A1
+        # else:
+        #     scores = scores.ravel()
+
         goodindex = np.argsort(scores)
         #print("gind", goodindex)
         goodindex = goodindex[-self.selelector_k:]
@@ -124,10 +134,12 @@ class gradigrammar(lsgg):
 class edengrammar(gradigrammar):
     def make_core_vector(self, core, graph, node_vectors):
         c_set = set(core.nodes())
+        # TODO check if edge check is necessary...
         core_ids = [i for i,n in enumerate(graph.nodes()) if n in c_set and not graph.nodes[n].get('edge',False)  ]
         return dok_matrix(node_vectors[core_ids,:].sum(axis=0))
 
     def vertex_vectorizer(self,exgraph):
+        # TODO vectex vectorization should be part of the vectorizer class, hoever this abstraction needs to also be done in graphlearn..
         return  eg.vertex_vectorize([exgraph], d = self.eden_d, r=self.eden_r, normalization = False,nbits= 16,inner_normalization= False)[0]
 
     def vectorize(self,graph):
