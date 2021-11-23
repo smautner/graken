@@ -4,7 +4,7 @@ from graken.pareto import grammar, pareto
 def construct(target,graphs,graphsV, vectorizer,nn, n_iter = 10):
 
     n = nn.kneighbors(target)[1][0]
-    print(f"{n=} {len(graphs)=}")
+    #print(f"{n=} {len(graphs)=}")
     lando = [graphs[i] for i in n[:10]]
     ranke = [graphs[i] for i in n]
 

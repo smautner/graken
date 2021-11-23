@@ -30,6 +30,6 @@ def plot(X,Y):
     plt.scatter(XUY[:,0],XUY[:,1],c=Y)
     plt.show()
 
-plot(X1,Y1)
+#plot(X1,Y1)
 
 
