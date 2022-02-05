@@ -1,0 +1,28 @@
+`mkdir -p tasks2_3
+`mkdir -p tasks2_4
+`mkdir -p tasks2_5
+
+
+
+if False:
+    `parallel -j 32 --bar $(which python) maketasks/maketasks.py --ngraphs 30\
+     --node_labels 4 --edge_labels 2 --bottleneck 2000\
+     --iter {{2}} --numgr 3000  --graphsize 8 --out tasks2_{{2}}/task_{{1}} ::: 0 1 2 ::: 4
+else:
+    # debug version
+    p = `which python
+    `qsub -q tiny qsubexample.sh -V -t 0-2 -v cmd="{p} maketasks/maketasks.py --ngraphs 30 --node_labels 4 --edge_labels 2 --bottleneck 200 --iter 2 --numgr 1000  --graphsize 8 --out delme.del"
+    print("allgood")
+    exit()
+
+
+ #parallel -j 32 --bar  python maketasks/maketasks.py --iter 3 --numgr 6000 --out tasks83/task_{1} ::: (seq 0 99)
+ #parallel -j 32 --bar  python maketasks/maketasks.py --iter 4 --numgr 6000 --out tasks84/task_{1} ::: (seq 0 99)
+
+
+from main import loadfile as load
+import glob
+#files = glob.glob('tasks2_4/.*')
+files = ['delme.del']
+print ("############# AVG SIZE ##########")
+print(sum([len(load(e)) for e in files])/len(files))

@@ -8,11 +8,12 @@ def rule_rand_graphs(input_set, numgr =100, iter= 1, bottleneck = 500, graphsize
     grammar = lsgg.LocalSubstitutionGraphGrammar(radii=[1,2], thickness=1,
                  filter_min_cip=1, filter_min_interface=2, nodelevel_radius_and_thickness=True)
     grammar.fit(input_set)
+    grammar.structout()
     #grammar.structout()
     cleaner = vector.Vectorizer()
     startgraphs = input_set
     ####
-    # graph filtering 
+    # graph filtering
     #####
     sss = {} # permanent banlist for graphs
     def filtergraphs(graphs, low, up ):
@@ -27,7 +28,7 @@ def rule_rand_graphs(input_set, numgr =100, iter= 1, bottleneck = 500, graphsize
         input_set = [g for start in input_set for g  in grammar.neighbors(start)]
         print(f"graphs generated after iter{i}:{len(input_set)}")
     # also needs duplicate removal
-    
+
     input_set = filtergraphs(input_set, low = graphsize, up = graphsize)
 
     print(f"graphs after lastsizefilter:{len(input_set)}")
